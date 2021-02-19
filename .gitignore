@@ -18,4 +18,4 @@ application/uploads/*
 /vendor/
 /assets/*
 /.htaccess
-/system/*
+
