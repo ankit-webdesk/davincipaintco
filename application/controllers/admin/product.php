@@ -33,53 +33,25 @@ class Product extends CI_controller{
 		$this->load->view("admin/common/footer");
 	}
 	
-	function removeorder(){
-		$setting_volusion 		= $this->productmodel->getGeneralSetting();
-		$storeurl_volusion 		= $setting_volusion[0]['storeurl_volusion'];
-		$loginemail 		    = $setting_volusion[0]['loginemail'];
-		$encryptedpassword      = $setting_volusion[0]['encryptedpassword'];
-		$bcstoreurl  			= $setting_volusion[0]['storeurl'];
-		$apiusername			= $setting_volusion[0]['apiusername'];
-		$apitoken   			= $setting_volusion[0]['apitoken'];
-		$apipath    			= $setting_volusion[0]['apipath'];
-		
-			
-		// Bc class connection
-		Bigcommerce::configure(array('store_url' => $bcstoreurl,'username'  => $apiusername,'api_key'   => $apitoken));		
-		
-		// SSL verify False
-		Bigcommerce::verifyPeer(false);
- 		// Display error exception on
-		Bigcommerce::failOnError();
-		
-		Bigcommerce::deleteAllOrders();
-	}
-	
-	
-	function updateproduct()
-	{
+	function updateproduct() {
 		header('Content-Type: text/html; charset=utf-8');
 		
 		$product_sku   = $this->input->get('code');
 		$bc_product_id = $this->input->get('bc_id');
 		
-		$setting_volusion 		= $this->productmodel->getGeneralSetting();
-		$storeurl_volusion 		= $setting_volusion[0]['storeurl_volusion'];
-		$loginemail 		    = $setting_volusion[0]['loginemail'];
-		$encryptedpassword      = $setting_volusion[0]['encryptedpassword'];
-		$bcstoreurl  			= $setting_volusion[0]['storeurl'];
-		$apiusername			= $setting_volusion[0]['apiusername'];
-		$apitoken   			= $setting_volusion[0]['apitoken'];
-		$apipath    			= $setting_volusion[0]['apipath'];
+		$setting 			= $this->productmodel->getGeneralSetting();
+		$storeurl_volusion 	= $setting['storeurl_volusion'];
+		$loginemail 		= $setting['login_email'];
+		$encryptedpassword	= $setting['encryptedpassword'];
+								
+		$bcstoreurl  	= $setting['storeurl'];
+		$client_id		= $setting['client_id'];
+		$auth_token   	= $setting['apitoken'];
+		$store_hash    	= $setting['storehash'];
 		
-			
-		// Bc class connection
-		Bigcommerce::configure(array('store_url' => $bcstoreurl,'username'  => $apiusername,'api_key'   => $apitoken));		
-		
-		// SSL verify False
-		Bigcommerce::verifyPeer(false);
- 		// Display error exception on
-		Bigcommerce::failOnError();
+		Bigcommerce::configure(array( 'client_id' => $client_id, 'auth_token' => $auth_token, 'store_hash' => $store_hash )); // Bc class connection	
+		Bigcommerce::verifyPeer(false); // SSL verify False
+		Bigcommerce::failOnError(); // Display error exception on
 		
 		// Get product information form volusion
 		$product_data        = @file_get_contents($storeurl_volusion."/net/WebService.aspx?Login=".$loginemail."&EncryptedPassword=".$encryptedpassword."&EDI_Name=Generic\Products&SELECT_Columns=p.StockStatus,p.ProductPopularity,p.ProductCode,p.DoNotAllowBackOrders,pe.SalePrice,pe.ProductPrice&WHERE_Column=p.ProductCode&WHERE_Value=".str_replace(' ','%20',$product_sku)."");
@@ -140,122 +112,9 @@ class Product extends CI_controller{
 		
 	}
 	
-	// Category import Volusion to BC
-	function ImportCategory()
-	{
-		$setting_volusion 		= $this->productmodel->getGeneralSetting();
-		$storeurl_volusion 		= $setting_volusion[0]['storeurl_volusion'];
-		$loginemail 		    = $setting_volusion[0]['loginemail'];
-		$encryptedpassword      = $setting_volusion[0]['encryptedpassword'];
-		$bcstoreurl  			= $setting_volusion[0]['storeurl'];
-		$apiusername			= $setting_volusion[0]['apiusername'];
-		$apitoken   			= $setting_volusion[0]['apitoken'];
-		$apipath    			= $setting_volusion[0]['apipath'];
-		
-		
-		// Store connection
-		$store = new Bigcommerceapi($apiusername, $apipath , $apitoken);
-		
-		
-		// Bc class connection
-		Bigcommerce::configure(array(
-			'store_url' => $bcstoreurl,
-			'username'  => $apiusername,
-			'api_key'   => $apitoken
-		));		
-		
-		// SSL verify False
-		Bigcommerce::verifyPeer(false);
-		// Display error exception on
-		Bigcommerce::failOnError();
-		
-		$category_id 	 				= $this->input->get('code');
-		$category_details 				= $this->productmodel->getvolusionCategoryDetails($category_id);		
-		
-		$categorys_data_e   			= @file_get_contents($storeurl_volusion."/net/WebService.aspx?Login=".$loginemail."&EncryptedPassword=".$encryptedpassword."&EDI_Name=Categories&SELECT_Columns=*&WHERE_Column=CategoryID&WHERE_Value=".$category_id."");
-		$cat_data_e 					= simplexml_load_string($categorys_data_e);
-		$cat_json_e 					= json_encode($cat_data_e);
-		$cat_check_e					= json_decode($cat_json_e,TRUE);
-		$volusion_cat_details	 		= $cat_check_e['Categories'];
-		
-		
-		if(isset($volusion_cat_details) && !empty($volusion_cat_details))
-		{
-			$category_array			 = array();
-			
-			$categoryname = str_replace('<br>','',$volusion_cat_details['CategoryName']);
-			$categoryname = str_replace('<br/>','',$categoryname);
-			
-			$category_array['name']  	  	  =  '';
-			if(isset($categoryname) && !empty($categoryname))
-			{
-				$category_array['name']  	  		  	  = substr($categoryname,0,50);
-			}
-			
-			$category_array['description']  	  	  =  '';
-			if(isset($volusion_cat_details['CategoryDescription']) && !empty($volusion_cat_details['CategoryDescription']))
-			{
-				$description_p = str_replace('src="http://www.jewelrykeepsakes.com','src="/content/',$volusion_cat_details['CategoryDescription']);
-				$description_p = str_replace('src="v/','src="/content/v/',$description_p);
-				$description_p = str_replace('src="/v/','src="/content/v/',$description_p);
-				$category_array['description']  	  	  = $description_p;
-			}
-			
-			$category_array['meta_keywords']  	 	  = '';
-			if(isset($volusion_cat_details['METATAG_Keywords']) && !empty($volusion_cat_details['METATAG_Keywords']))
-			{
-				$category_array['meta_keywords']  	  = $volusion_cat_details['METATAG_Keywords'];
-			}
-			
-			$category_array['meta_description']  	 	  = '';
-			if(isset($volusion_cat_details['METATAG_Description']) && !empty($volusion_cat_details['METATAG_Description']))
-			{
-				$category_array['meta_description']  	  = $volusion_cat_details['METATAG_Description'];
-			}
-			
-			$category_array['page_title']  	 	  = '';
-			if(isset($volusion_cat_details['METATAG_Title']) && !empty($volusion_cat_details['METATAG_Title']))
-			{
-				$category_array['page_title']  	  = $volusion_cat_details['METATAG_Title'];
-			}
-			
-			$category_array['search_keywords']  	 	  = '';
-			if(isset($volusion_cat_details['Link_Title_Tag']) && !empty($volusion_cat_details['Link_Title_Tag']))
-			{
-				$category_array['search_keywords']  	  = $volusion_cat_details['Link_Title_Tag'];
-			}
-			
-			if(isset($volusion_cat_details['CategoryOrder']) && !empty($volusion_cat_details['CategoryOrder']))
-			{
-				$category_array['sort_order']  	  = $volusion_cat_details['CategoryOrder'];
-			}
-			$category_array['is_visible'] = false;
-			
-			if(isset($volusion_cat_details['Hidden']) && !empty($volusion_cat_details['Hidden']) && $volusion_cat_details['Hidden'] == 'N'){
-				$category_array['is_visible'] = true;
-			}
-			
-			$category_array['parent_id'] 			  = 296;
-		
-			try {
-				$importcategory_bc = Bigcommerce::createCategory($category_array);
-				$this->productmodel->storeCategoryID($importcategory_bc->id,$category_id);
-				echo $importcategory_bc->id.' - BC category import successfully...';
-				
-			} catch(Bigcommerce\Api\Error $error) {
-				echo $error->getCode();
-				echo $error->getMessage();
-			}
-		}
-		else
-		{
-			echo $category_id.' - Category Details Not Found...';
-		}
-		
-	}
 	
-	function getproductimages()
-	{
+	
+	function getproductimages() {
 	
 		$setting_volusion 		= $this->productmodel->getGeneralSetting();
 		$storeurl_volusion 		= $setting_volusion[0]['storeurl_volusion'];

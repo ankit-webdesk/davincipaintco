@@ -149,11 +149,7 @@ class Category extends CI_Controller {
 		$client_id		= $setting['client_id'];
 		$auth_token   	= $setting['apitoken'];
 		$store_hash    	= $setting['storehash'];
-		
-		Bigcommerce::configure(array( 'client_id' => $client_id, 'auth_token' => $auth_token, 'store_hash' => $store_hash )); // Bc class connection	
-		Bigcommerce::verifyPeer(false); // SSL verify False
-		Bigcommerce::failOnError(); // Display error exception on
-		
+			
 		$volusion_cat_details = $this->categorymodel->getvolusionCategoryDetails($category_id);		
 			
 		if(isset($volusion_cat_details) && !empty($volusion_cat_details)) {
@@ -176,9 +172,11 @@ class Category extends CI_Controller {
 				$category_array['description'] 	= $description_p;
 			}
 			
-			$category_array['meta_keywords']	= '';
+			$category_array['meta_keywords']	= array();
 			if(isset($volusion_cat_details['metatag_keywords']) && !empty($volusion_cat_details['metatag_keywords'])) {
-				$category_array['meta_keywords']	= $volusion_cat_details['metatag_keywords'];
+				$meta_keywords = array();
+				$meta_keywords[] = $volusion_cat_details['metatag_keywords'];
+				$category_array['meta_keywords']	= $meta_keywords;
 			}
 			
 			$category_array['meta_description']	= '';
@@ -210,21 +208,51 @@ class Category extends CI_Controller {
 				$parent_id = $this->categorymodel->getParentId($volusion_cat_details['parentid']);
 				$category_array['parent_id']	= $parent_id['bc_category_id'];
 			}
-						
-			try {
-				$importcategory_bc = Bigcommerce::createCategory($category_array);
-				$this->categorymodel->updateCategorystatus($category_id, $importcategory_bc->id, $importcategory_bc->url);
-				
-				echo $importcategory_bc->id.' - BC category import successfully...';
-				
-			} catch(Bigcommerce\Api\Error $error) {
-				echo $error->getCode();
-				echo $error->getMessage();
+			
+			$encodedToken 		= base64_encode("".$client_id.":".$auth_token."");
+			$authHeaderString 	= 'Authorization: Basic ' . $encodedToken;   	
+			$post_data 		    = json_encode($category_array);
+			
+			$curl = curl_init();
+			curl_setopt_array($curl, array(
+				CURLOPT_URL => "https://api.bigcommerce.com/stores/".$store_hash."/v3/catalog/categories",
+				CURLOPT_RETURNTRANSFER => true,
+				CURLOPT_ENCODING => "",
+				CURLOPT_MAXREDIRS => 10,
+				CURLOPT_TIMEOUT => 30,
+				CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+				CURLOPT_CUSTOMREQUEST => "POST",
+				CURLOPT_POSTFIELDS => $post_data,
+				CURLOPT_HTTPHEADER => array($authHeaderString,'Accept: application/json','Content-Type: application/json','X-Auth-Client: '.$client_id.'','X-Auth-Token: '.$auth_token.''),
+		 	));
 
-				$error1 = $error->getMessage();
-				$error2 = $this->db->escape_str($error1);
-				$this->categorymodel->updateCategoryMessage($category_id, $error2);
-			}
+			$response = curl_exec($curl);
+			$err = curl_error($curl);
+
+			curl_close($curl);
+
+			if ($err) {
+			echo "cURL Error #:" . $err;
+			} else {
+				$importcategory = json_decode($response);
+				// echo '<pre>';
+				// print_r($importcategory);
+				// exit;
+			
+				if(isset($importcategory->data) && !empty($importcategory->data)) {
+					
+					$this->categorymodel->updateCategorystatus($category_id, $importcategory->data->id, $importcategory->data->custom_url->url);
+				
+					echo $importcategory->data->id.' - BC category import successfully...';
+				} else {
+					$error1 = @$importcategory->title;
+					
+					$error2 = $this->db->escape_str($error1);
+					$this->categorymodel->updateCategoryMessage($category_id, $error2);
+
+					echo $category_id.' - '. $error1;
+				}
+			}	
 		} else {
 			echo $category_id.' - Category Details Not Found...';
 		}	

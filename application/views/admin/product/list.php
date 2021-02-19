@@ -13,7 +13,7 @@
 				<div class="col-md-12">
 					<!-- BEGIN PAGE TITLE & BREADCRUMB-->
 					<h3 class="page-title">
-						Volusion to Shopify Product Import
+						Volusion to BigCommerce Product Import
 					</h3>
 					<ul class="page-breadcrumb breadcrumb">
 						<li>

@@ -1,8 +1,8 @@
 <?php
-class Vbproductmodel extends CI_Model{
+class Productmodel extends CI_Model{
 	var $table_name	= "";
-	function __construct()
-	{
+	function __construct() {
+
 		ini_set('display_errors','On');
 		error_reporting(E_ALL);
 		
@@ -15,9 +15,8 @@ class Vbproductmodel extends CI_Model{
 		$this->option_category_table  	   = "vboption_category";
 	}
 	
-	function getProduct()
-	{
-		//$query 		   = $this->db->query("select * from ".$this->product_table." WHERE other_details_s = 'no' ");
+	function getProduct() {
+
 		$query 		   = $this->db->query("select * from ".$this->product_table." WHERE update_status = 'no'");
 		$product_data  = $query->result_array();
 		return $product_data;
@@ -156,14 +155,11 @@ class Vbproductmodel extends CI_Model{
 		}
 		return '';
 	}
-	
-	
-	
-	function getGeneralSetting()
-	{
+		
+	function getGeneralSetting() {
+
 		$query = $this->db->query("select * from ".$this->setting_table."");
-		$setting_data  = $query->result_array();
-		return $setting_data;
+		return $query->row_array();
 	}
 	
 	function getvolusionCategoryDetails($category_id)
