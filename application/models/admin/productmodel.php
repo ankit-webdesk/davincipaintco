@@ -1,179 +1,134 @@
 <?php
-class Productmodel extends CI_Model{
-	var $table_name	= "";
-	function __construct() {
-
-		ini_set('display_errors','On');
-		error_reporting(E_ALL);
+use Bigcommerce\Api\Client as Bigcommerce;
+class Productmodel extends CI_Model
+{
+	public function __construct() {
+		$this->setting_table 		= "users";
+		$this->category_table		= "category";
+		$this->product_table		= "products";
 		
-		$this->product_table 		  	   = "vbproducts";
-		$this->product_category_table	   = "vbcategory_tree";
-		$this->product_category_rel_table  = "vbproduct_category_rel";
-		$this->setting_table 		 	   = "setting_v_b";
-		$this->product_option_rel_table    = "vbproduct_option_rel";
-		$this->product_option_table  	   = "vbproduct_option";
-		$this->option_category_table  	   = "vboption_category";
+		include(APPPATH.'/third_party/bcapi/vendor/autoload.php');
 	}
-	
-	function getProduct() {
 
-		$query 		   = $this->db->query("select * from ".$this->product_table." WHERE update_status = 'no'");
+	public function getGeneralSetting() {
+		$query = $this->db->query("SELECT * FROM ".$this->setting_table."");
+		return $query->row_array();
+	}
+
+	public function getproductdata() {
+		$query_product_bc_data = $this->db->query("SELECT * FROM ".$this->product_table." WHERE bc_product_id = '' and message = '' and status = 'no'");
+		return $query_product_bc_data->result_array();
+	}
+
+	public function getProductCategory($Productcode) {
+		
+		$query_product_cat = $this->db->query("SELECT categoryids FROM `products` WHERE `productcode` LIKE '".$Productcode."'");
+		$category_data = $query_product_cat->row_array();
+		
+		$category = array();
+		if(isset($category_data) && !empty($category_data)) {
+			
+			$cet_data = explode(',',$category_data['categoryids']);
+			
+			foreach ($cet_data as $cet_data_s) {
+				$query_product_cat = $this->db->query("SELECT bc_category_id FROM `categories` WHERE `categoryid` = '".$cet_data_s."'");
+				$data = $query_product_cat->row_array();
+			
+				if(isset($data['bc_category_id']) && !empty($data['bc_category_id']))
+				{
+					$category[] = $data['bc_category_id'];
+				}
+			}
+			return $category;
+		}		
+		return '';
+	}
+
+	public function UpdateProductStatus($product_code,$bc_product_id,$product_url) {
+		$query_update = $this->db->query("Update ".$this->product_table." set bc_product_id = '".$bc_product_id."', bc_url = '".$product_url."', status = 'yes' WHERE productcode = '".$product_code."'");
+	}
+
+	public function UpdateProductMessage($product_code, $error) {
+		$query_update = $this->db->query("Update ".$this->product_table." set message = '".$error."' WHERE productcode = '".$product_code."'");
+	}
+
+	public function getRelatedProdata() {
+		$query = $this->db->query("SELECT * FROM `related_product` WHERE `bc_product_id` != '' GROUP by `product_id`");
+		return $query->result_array();
+	}
+
+	public function getBCProductID($Sku)
+	{
+		$query = $this->db->query("SELECT `Product_ID` FROM `bc_products` WHERE `Code` = '".$Sku."'");
+		$data =  $query->row_array();
+
+
+		if(isset($data['Product_ID']) && !empty($data['Product_ID']))
+		{
+			$query_update = $this->db->query("Update `live_products` set bc_product_id = '".$data['Product_ID']."' WHERE sku = '".$Sku."'");
+		} 
+		// return '';
+	}
+
+	function getProductSKU($productsku) {
+		$query 		   = $this->db->query("select * from ".$this->product_table." WHERE ischildofproductcode = '".$productsku."'");
 		$product_data  = $query->result_array();
 		return $product_data;
 	}
-	
-	function updateotherstatus($bc_product_id){
-		//$query = $this->db->query("UPDATE ".$this->product_table." SET other_details_s = 'yes' WHERE bc_product_id = '".$bc_product_id."'");
-		$query = $this->db->query("UPDATE ".$this->product_table." SET update_status = 'yes' WHERE bc_product_id = '".$bc_product_id."'");
-	}
-	
-	function Updateproductwrantty($bc_product_id)
-	{
-		$query = $this->db->query("UPDATE ".$this->product_table." SET ordering_status = 'yes' WHERE bc_product_id = '".$bc_product_id."'");
-	}
-	
-	function UpdateOrderingStatus($bc_product_id)
-	{
-		$query = $this->db->query("UPDATE ".$this->product_table." SET update_status = 'yes' WHERE bc_product_id = '".$bc_product_id."'");
-	}
-	
-	function Updateproductstock($bc_product_id)
-	{
-		$query = $this->db->query("UPDATE ".$this->product_table." SET stock_status = 'yes' WHERE bc_product_id = '".$bc_product_id."'");
-	}
-	
-	function getAllProducts()
-	{
-		$query 		 = $this->db->query("select product_sku,bc_product_id from ".$this->product_table." LIMIT 2000,1000");
-		$get_productsku  = $query->result_array();
-		return $get_productsku;
-	}
-	
-	function UpdateimageStatus($productcode)
-	{
-		$query = $this->db->query("UPDATE ".$this->product_table." SET image_set = 'no' WHERE product_sku = '".$productcode."'");
-	}
-	
-	
-	function UpdateProductStatusp($product_id,$productcode)
-	{
-		$query = $this->db->query("UPDATE ".$this->product_table." SET bc_product_id = '".$product_id."', status = 'yes'  WHERE  product_sku = '".$productcode."'");
-	}
-	
-	function UpdateOptionID($bc_option_id,$option_cat_id)
-	{
-		$query = $this->db->query("UPDATE ".$this->option_category_table." SET bc_option_id = '".$bc_option_id."' WHERE id = '".$option_cat_id."'");
-	}
-	
-	function UpdateOptionValueID($option_id,$option_value_id)
-	{
-		$query = $this->db->query("UPDATE ".$this->product_option_table." SET bc_option_value_id = '".$option_value_id."' WHERE id = '".$option_id."'");
-	}
-	
-	function UpdateOptionSetID($ProductCode,$option_set_id)
-	{
-		$query = $this->db->query("UPDATE ".$this->product_table." SET option_set_id = '".$option_set_id."' WHERE product_sku = '".$ProductCode."'");
-	}
-	
-	function getBCproductID($ProductCode)
-	{
-		$query = $this->db->query("select bc_product_id from ".$this->product_table." WHERE product_sku = '".$ProductCode."'");
-		$bc_product_id  = $query->result_array();
-		if(isset($bc_product_id[0]['bc_product_id']) && !empty($bc_product_id[0]['bc_product_id']))
-		{
-			return $bc_product_id[0]['bc_product_id'];
-		}
-		return '';
-		
-	}
-	
-	function getProductOptionssetID($ProductCode)
-	{
-		$query = $this->db->query("select option_set_id from ".$this->product_table." WHERE product_sku = '".$ProductCode."'");
-		$option_set_id  = $query->result_array();
-		if(isset($option_set_id[0]['option_set_id']) && !empty($option_set_id[0]['option_set_id']))
-		{
-			return $option_set_id[0]['option_set_id'];
-		}
-		return '';
-		
-	}
-	
-	function getOptiondetails($option_id)
-	{
-		$query = $this->db->query("select po.*,po.id as opid,opc.*,opc.id as opcid from ".$this->product_option_table." as po,".$this->option_category_table." as opc WHERE opc.id = po.optioncatid AND po.id = '".$option_id."'");
-		$option_details  = $query->result_array();
-		if(isset($option_details[0]) && !empty($option_details[0]))
-		{
-			return  $option_details[0];
-		}
-		return '';
-	}
-	
-	function getProductOptions($productcode)
-	{
-		$query = $this->db->query("select optionids from ".$this->product_option_rel_table." WHERE productcode = '".$productcode."'");
-		$product_option  = $query->result_array();
-		if(isset($product_option[0]['optionids']) && !empty($product_option[0]['optionids'])){
-			$options = explode(',',$product_option[0]['optionids']);
-			return $options;
-		}
-		return '';
-	}
-	
-	function UpdatecategoryIDtoBCID()
-	{
-		$query = $this->db->query("select * from ".$this->product_category_rel_table." GROUP BY category_id");
-		$category_data  = $query->result_array();
-		
-		foreach($category_data as $category_data_s)
-		{
-			$query = $this->db->query("select bc_category_id from ".$this->product_category_table." WHERE category_id = '".$category_data_s['category_id']."'");
-			$bcproduct_id_data  = $query->result_array();
-			
-			$query = $this->db->query("UPDATE ".$this->product_category_rel_table." SET bc_category_id = '".$bcproduct_id_data[0]['bc_category_id']."' WHERE category_id = '".$category_data_s['category_id']."'");
-			
-		}
-		
-	}
-	
-	
-	
-	function getvolusionCategory($productSKU)
-	{
-		$query = $this->db->query("select bc_category_id from ".$this->product_category_rel_table." WHERE product_sku = '".$productSKU."'");
-		$product_cat_data  = $query->result_array();
-		
-		if(isset($product_cat_data) && !empty($product_cat_data))
-		{
-			$product_cat = array();
-			foreach($product_cat_data as $product_cat_data_s)
-			{
-				$product_cat[] = $product_cat_data_s['bc_category_id'];
-			}
-			return $product_cat;
-		}
-		return '';
-	}
-		
-	function getGeneralSetting() {
 
-		$query = $this->db->query("select * from ".$this->setting_table."");
-		return $query->row_array();
-	}
-	
-	function getvolusionCategoryDetails($category_id)
+
+	public function getRelatedIDs($product_id)
 	{
-		$query = $this->db->query("select * from ".$this->product_category_table." WHERE category_id = '".$category_id."'");
-		$category_data  = $query->result_array();
-		return $category_data[0];
+		$query = $this->db->query("SELECT `bc_product_id` FROM `related_product` WHERE `product_id` = '".$product_id."' GROUP by bc_product_id");
+		return $query->result_array();
 	}
+
+	public function updateProductid($product_id) {
+		$query_update = $this->db->query("Update `live_products` set status = 'yes' WHERE bc_product_id = '".$product_id."'");
+	}
+
+	public function updateVideostatus($product_id) {
+		$query_update = $this->db->query("Update `live_products` set video_status = 'yes' WHERE sku = '".$product_id."'");
+	}
+
+	public function updateProductData($bc_product_id,$related_ids) {
+		$query_update = $this->db->query("Update `related_product` set bc_product_id = '".$bc_product_id."' WHERE related_ids = '".$related_ids."'");
+	}
+
+	public function insertRelatedIDS($product_id,$related_ids) {
+
+		$explode = explode(',', $related_ids);
+		$related = array();
+		$i = 0;
+		foreach ($explode as $related_idss) {
+			$related[$i]['product_id'] = $product_id;
+			$related[$i]['related_ids'] = trim($related_idss);
+		$i++;
+		}
 	
-	function storeCategoryID($bc_category_id,$category_id)
+		if(isset($related) && !empty($related))
+		{
+			$this->db->insert_batch('related_product',$related);
+		}
+	}
+
+	
+
+	public function updateMPN($product_id,$mpn)
 	{
-		$query = $this->db->query("UPDATE ".$this->product_category_table." SET bc_category_id = '".$bc_category_id."' WHERE category_id = '".$category_id."'");
+		$query_update = $this->db->query("Update ".$this->product_table." set mpn = '".$mpn."' WHERE product_id = '".$product_id."'");
 	}
-	
-	
+
+	public function updatebrand($product_id,$brand)
+	{
+		$query_update = $this->db->query("Update ".$this->product_table." set brand = '".$brand."' WHERE product_id = '".$product_id."'");
+	}
+
+	public function getProductOption($name,$option,$bc_product_id)
+	{
+		$query_product_bc_data = $this->db->query("SELECT * FROM option_values WHERE option_name = '".$name."' and option_value = '".$option."' and product_id = '".$bc_product_id."'");
+		return $query_product_bc_data->row_array();
+	}
+
 }
 ?>
