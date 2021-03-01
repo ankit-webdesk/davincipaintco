@@ -69,6 +69,10 @@ class Product extends CI_Controller
 
 		$product_details 	 = $product_data_res['Products'];
 
+		echo '<pre>';
+		print_r($product_data_res);
+		exit;
+
 		$product_array = array();
 
 		//Product Name
