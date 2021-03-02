@@ -472,6 +472,7 @@ class Product extends CI_Controller
 				echo $product_code.' - Product Import Error '. $error1;
 			}
 		}
+		
 	}
 }
 ?>
