@@ -146,16 +146,16 @@ function sendRquest()
 	jQuery('#start_stop_action').removeClass('glyphicon-play');
 	jQuery('#start_stop_action').addClass('glyphicon-pause');										
 	var code=jQuery('.start_process').attr('data-code');
-	var email=jQuery('.start_process').attr('data-email');
+	// var email=jQuery('.start_process').attr('data-email');
 	if(code){
 		jQuery('.processing').removeClass('processing');
 		jQuery('.start_process').find('.respose_tag').html('Please wait...');
 		jQuery('.start_process').addClass('processing');
 		$.ajax({
-			url: '<?php echo $this->config->site_url();?>/admin/customer/importbccustomer',
+			url: '<?php echo $this->config->site_url();?>/admin/customer/importCustomer',
 			data: {
 				code: code,
-				email:email,
+				// email:email,
 				send:'yes'
 			},
 			error: function() {

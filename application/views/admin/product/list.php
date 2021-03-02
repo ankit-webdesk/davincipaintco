@@ -1,7 +1,4 @@
-<?php 
-	ini_set('display_errors','On');
-		error_reporting(E_ALL);
-		
+<?php 		
 ?>
 <div class="clearfix">
 </div>
@@ -13,7 +10,7 @@
 				<div class="col-md-12">
 					<!-- BEGIN PAGE TITLE & BREADCRUMB-->
 					<h3 class="page-title">
-						Volusion to Shopify Product Import
+						Volusion to BigCommerce Product Import
 					</h3>
 					<ul class="page-breadcrumb breadcrumb">
 						<li>
@@ -82,37 +79,27 @@
 						<table class="table table-bordered table-striped table-condensed flip-content">
 							<thead class="flip-content">
 								<tr>
-									<th width="5%">
-										 #
-									</th>
-									<th width="20%">
-										Product SKU
-									</th>
-									<th width="20%">
-										Shopify Product ID
-									</th>
-									<th class="numeric" width="15%">
-										 Status
-									</th>
+									<th width="5%">  # </th>
+									<th width="15%"> Product SKU </th>
+									<th width="50%"> Product Name </th>
+									<th class="numeric" width="30%"> Status </th>
 								</tr>
 							</thead>
 							<tbody>
-								<?php 
-									if(isset($product_data) && !empty($product_data) && count($product_data)>0)
-									{
+								<?php if(isset($product_data) && !empty($product_data) && count($product_data) > 0) {
+
 										$no=1;
-										foreach($product_data as $d) 
-										{	
+										foreach($product_data as $d) {	
 											?>
-											<tr <?php if($no==1) { echo 'class="start_process"'; } ?> data-code="<?php echo $d['shopify_product_id']; ?>" data-sku="<?php echo $d['product_sku']; ?>">
+											<tr <?php if($no==1) { echo 'class="start_process"'; } ?> data-code="<?php echo $d['productcode']; ?>">
 												<td><?php echo $no++ ;?></td>
-												<td><?php echo($d['product_sku'])?></td>
-												<td><?php echo($d['shopify_product_id'])?></td>
+												<td><?php echo($d['productcode'])?></td>
+												<td><?php echo($d['productname'])?></td>
 												<td class="numeric respose_tag">Pending</td>
 											</tr>
 											<?php 
 										}
-									}else{ ?>
+									} else { ?>
 										<tr>
 											<td  colspan="4" class="numeric respose_tag">Please try again</td>
 										</tr>
@@ -145,20 +132,14 @@ function sendRquest()
 	jQuery('#start_stop_controller').show();
 	jQuery('#start_stop_action').removeClass('glyphicon-play');
 	jQuery('#start_stop_action').addClass('glyphicon-pause');										
-	
-	var code = jQuery('.start_process').attr('data-sku');
-//	var sku = jQuery('.start_process').attr('data-sku');
-	
-//	alert(code);
+
+	var code = jQuery('.start_process').attr('data-code');
 	if(code){
 		jQuery('.processing').removeClass('processing');
 		jQuery('.start_process').find('.respose_tag').html('Please wait...');
 		jQuery('.start_process').addClass('processing');
 		$.ajax({
-			url: '<?php echo $this->config->site_url();?>/admin/vsproduct/ImportProducts',
-			//url: '<?php echo $this->config->site_url();?>/admin/vsproduct/updatemetafield',
-			//url: '<?php echo $this->config->site_url();?>/admin/vsproduct/UpdateProductDecription',
-			//url: '<?php echo $this->config->site_url();?>/admin/vsproduct/importgoogleshippingfield',
+			url: '<?php echo $this->config->site_url();?>/admin/product/ImportProduct',
 			data: {
 				code: code,
 				send:'yes'

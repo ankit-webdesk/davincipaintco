@@ -29,7 +29,7 @@ class Customer extends CI_controller{
 		
 		$this->load->view("admin/common/header",$this->data);
 		$this->data['left_nav']=$this->load->view('admin/common/leftmenu',$this->data,true);	
-		$this->load->view("admin/list",$this->data);
+		$this->load->view("admin/customer/list",$this->data);
 		$this->load->view("admin/common/footer");				
 	}
 	
@@ -47,8 +47,29 @@ class Customer extends CI_controller{
 	    return 0;
 	}
 
-	function getAllVoluCustomer()
-	{ 
+	function getAllVoluCustomer() { 
+
+		$config_data  = $this->customermodel->getGeneralSetting();
+		
+		$storeurl_volusion 	= $config_data['storeurl_volusion'];
+		$loginemail 		= $config_data['login_email'];
+		$encryptedpassword 	= $config_data['encryptedpassword'];
+
+		// Get customer information form volusion
+		$customer_data = @file_get_contents($storeurl_volusion."/net/WebService.aspx?Login=".$loginemail."&EncryptedPassword=".$encryptedpassword."&EDI_Name=Generic\Customers&SELECT_Columns=*");
+							
+		$customer_data_e 	  = simplexml_load_string($customer_data);
+		$customer_data_decode = json_encode($customer_data_e);
+		$customer_data_res 	  = json_decode($customer_data_decode,TRUE);
+		
+		// $customer_details 	 = array();
+		// $customer_details 	 = $customer_data_res['Products'];
+
+		echo '<pre>';
+		print_r($customer_data_res);
+		exit;
+
+
 		$csvFile = APPPATH."uploads/export/Customers_USJXSKU2QQ.csv";
 
 		$file_handle = fopen($csvFile, 'r');
@@ -91,7 +112,7 @@ class Customer extends CI_controller{
 
 	        	$cust_inenst['customerid'] 	 	= $value['customerid'];
 				$cust_inenst['emailaddress'] 	= $emailaddress;
-				$cust_inenst['bc_customerid'] 	= '';
+				$cust_inenst['bc_customer_id'] 	= '';
 				$cust_inenst['status'] 	 		= 'no';
 				$cust_inenst['error_msg'] 		= '';
 				$cust_inenst['add_error_msg'] 	= '';	     
@@ -114,16 +135,17 @@ class Customer extends CI_controller{
         }
     }
 		 
-	function importbccustomer()
-	{
+	function importCustomer() {
+
 		$customer_id = $this->input->get('code');
-		$email	 	 = $this->input->get('email');
+		//$email	 	 = $this->input->get('email');
 		
-		$setting_volusion 	= $this->customermodel->getGeneralSetting();
-	
-		$storeurl_volusion	= $setting_volusion['storeurl_volusion'];
-		$loginemail 		= $setting_volusion['loginemail'];
-		$encryptedpassword 	= $setting_volusion['encryptedpassword'];
+		$config_data  = $this->customermodel->getGeneralSetting();
+		
+		$storeurl_volusion 	= $config_data['storeurl_volusion'];
+		$loginemail 		= $config_data['login_email'];
+		$encryptedpassword 	= $config_data['encryptedpassword'];
+
 		$volusion_API_URL	= $storeurl_volusion.'net/WebService.aspx?Login='.$loginemail.'&EncryptedPassword='.$encryptedpassword;
 		
 		$customer_data 		= @file_get_contents($volusion_API_URL."&EDI_Name=Generic\Customers&SELECT_Columns=*&WHERE_Column=CustomerID&WHERE_Value=".$customer_id."");
@@ -133,10 +155,13 @@ class Customer extends CI_controller{
 		$customer_details	= array();
 		$customer_details 	= $customer_data_f['Customers'];
 		
+		// echo '<pre>';
+		// print_r($customer_details);
+		// exit;
 
-		$client_id		= $setting_volusion['client_id'];
-		$access_token	= $setting_volusion['apitoken'];
-		$store_hash		= $setting_volusion['storehash'];	
+		$client_id		= $config_data['client_id'];
+		$access_token	= $config_data['apitoken'];
+		$store_hash		= $config_data['storehash'];	
 
 		Bigcommerce::configure(array('client_id' => $client_id, 'auth_token' => $access_token, 'store_hash' => $store_hash)); // Bc class connection
 		Bigcommerce::verifyPeer(false); // SSL verify False 		
@@ -183,28 +208,53 @@ class Customer extends CI_controller{
 		if(isset($customer_details['City']) && !empty($customer_details['City'])){
 			$customer_city = trim($customer_details['City']);
 		}
-		$customer_state = '';
-		if(isset($customer_details['State']) && !empty($customer_details['State'])){
-			$customer_state = trim($customer_details['State']);
-		}
-		$customer_zipcode = '';
-		if(isset($customer_details['PostalCode']) && !empty($customer_details['PostalCode'])){
-			$customer_zipcode = trim($customer_details['PostalCode']);
-		}
+		
 		$customer_country = '';
 		if(isset($customer_details['Country']) && !empty($customer_details['Country'])){
 			$customer_country = trim($customer_details['Country']);
-		}			
+		}
+		
+		$customer_state = '';
+		if(isset($customer_details['State']) && !empty($customer_details['State'])){
+			$cust_state = $this->customermodel->GetState($customer_details['State'], $customer_country);
+			$customer_state = trim($cust_state);
+		}
+				
+		$customer_zipcode = '';
+		if(isset($customer_details['PostalCode']) && !empty($customer_details['PostalCode'])){
+			$customer_zipcode = trim($customer_details['PostalCode']);
+		}		
 		
 		$customer_data = array();
 		$customer_data['first_name'] 	= $customer_firstname;
 		$customer_data['last_name'] 	= $customer_lastname;
 		$customer_data['company'] 		= $customer_companyname;
 		$customer_data['email'] 		= $customer_email;
+		// $customer_data['email'] 		= 'testing@1digitalagency.com';
 		$customer_data['phone'] 		= $customer_phonenumber;
 		$customer_data['notes'] 		= $customer_note;
-		
-		$getcustomer = Bigcommerce::getCustomers(array("email" => $email));
+
+		// $customer_address = array();
+		// $customer_address['first_name'] = $customer_firstname;
+		// $customer_address['last_name']	= $customer_lastname;
+		// $customer_address['company']	= $customer_companyname;
+		// $customer_address['street_1'] 	= $customer_address1;
+		// $customer_address['street_2'] 	= $customer_address2;
+		// $customer_address['city']		= $customer_city;
+		// $customer_address['state']		= $customer_state;
+		// $customer_address['zip']		= $customer_zipcode;
+		// $customer_address['country']	= $customer_country;
+		// $customer_address['phone']		= $customer_phonenumber;
+
+		// echo '<pre>';
+		// print_r($customer_data);
+		// echo '<pre>';
+		// print_r($customer_address);
+		// exit;
+
+		// exit;
+
+		$getcustomer = Bigcommerce::getCustomers(array("email" => $customer_data['email']));
 		
 		if(isset($getcustomer) && !empty($getcustomer))
 		{			

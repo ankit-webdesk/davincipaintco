@@ -25,14 +25,14 @@ class Login extends CI_Controller {
 		if($this->input->post('username') && $this->input->post('password'))
 		{
 			// Check USER AND PASSWORD VALID OR NOT
-			$query = $this->db->query("SELECT id,username,firstname from users where username='".$this->input->post('username')."' and password='".md5($this->input->post('password'))."'");
+			$query = $this->db->query("SELECT id,username from users where username='".$this->input->post('username')."' and password='".md5($this->input->post('password'))."'");
 			if ($query->num_rows() > 0)
 			{
 				   $row = $query->row_array();
 				   //SET SESSION
 				   $this->session->set_userdata('admin_session',$row['id']);
 				   $this->session->set_userdata('admin_username',$row['username']);
-				   $this->session->set_userdata('firstname',$row['firstname']);
+				   // $this->session->set_userdata('firstname',$row['firstname']);
 				   redirect('admin/dashboard');
 			}
 			else
@@ -53,14 +53,14 @@ class Login extends CI_Controller {
 		$this->data['errmsg']='';
 		if($this->input->post('username') && $this->input->post('password'))
 		{
-			$query = $this->db->query("SELECT id,username,firstname from users where username='".$this->input->post('username')."' and password='".md5($this->input->post('password'))."'");
+			$query = $this->db->query("SELECT id,username from users where username='".$this->input->post('username')."' and password='".md5($this->input->post('password'))."'");
 			if ($query->num_rows() > 0)
 			{
 			   $row = $query->row_array();
 			   //SET SESSION
 			   $this->session->set_userdata('admin_session',$row['id']);
 			   $this->session->set_userdata('admin_username',$row['username']);
-			   $this->session->set_userdata('firstname',$row['firstname']);
+			   // $this->session->set_userdata('firstname',$row['firstname']);
 			   redirect('admin/dashboard');
 			}
 			else
