@@ -1,4 +1,4 @@
-vendor
+
 composer.lock
 *.sh
 script/*
@@ -8,3 +8,4 @@ script/*
 /build
 /test/reports
 .env
+/assets/*
