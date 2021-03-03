@@ -52,6 +52,11 @@ class Productmodel extends CI_Model
 		$query_update = $this->db->query("Update ".$this->product_table." set message = '".$error."' WHERE productcode = '".$product_code."'");
 	}
 
+	public function getProductVideos($productId) {
+		$query = $this->db->query("SELECT * FROM `youtube_video` WHERE `productId` = '".$productId."'");
+		return $query->result_array();
+	}
+
 	public function getRelatedProdata() {
 		$query = $this->db->query("SELECT * FROM `related_product` WHERE `bc_product_id` != '' GROUP by `product_id`");
 		return $query->result_array();
