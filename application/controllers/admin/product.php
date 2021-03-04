@@ -573,8 +573,8 @@ class Product extends CI_Controller
 						} else {
 							$product_video_create = json_decode($video_response);
 		
-							echo '<pre>';
-							print_r($product_video_create);
+							// echo '<pre>';
+							// print_r($product_video_create);
 		
 							if(isset($product_video_create->data) && !empty($product_video_create->data)) { 
 								$imb = $vp + 1;
