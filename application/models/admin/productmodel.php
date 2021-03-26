@@ -20,6 +20,11 @@ class Productmodel extends CI_Model
 		return $query_product_bc_data->result_array();
 	}
 
+	public function getProductName($Productcode) {
+		$query_product = $this->db->query("SELECT productname FROM `products` WHERE productcode LIKE '".$Productcode."'");
+		return  $query_product->row_array();
+	}
+
 	public function getProductCategory($Productcode) {
 		
 		$query_product_cat = $this->db->query("SELECT categoryids FROM `products` WHERE `productcode` LIKE '".$Productcode."'");

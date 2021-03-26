@@ -126,17 +126,22 @@ class Product extends CI_Controller
 		// exit;
 
 		$pro_video    = $this->productmodel->getProductVideos($product_details['ProductID']);
-
+		
 		// echo '<pre>';
 		// print_r($pro_video);
 		// exit;
-
+		
 		$product_array = array();
+		
+		// $ProductName   = $this->productmodel->getProductName($product_code);
 
 		//Product Name
 		$product_array['name'] = '';
 		if(isset($product_details['ProductName']) && !empty($product_details['ProductName'])){
-			$product_array['name'] = $product_details['ProductName'];
+			
+			$pro_name = preg_replace( '/<!--(.|\s)*?-->/' , '' , $product_details['ProductName'] );
+			
+			$product_array['name'] = trim($pro_name);
 		}
 
 		//Product SKU

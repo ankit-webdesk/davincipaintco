@@ -15,10 +15,7 @@ class Customer extends CI_controller{
 		include(APPPATH.'/third_party/bcapi/vendor/autoload.php');
 	}
 
-	function index()
-	{			
-		$session_data = $this->session->userdata('admin_session');
-		if(!isset($session_data) || empty($session_data))redirect('admin/login');
+	function index() {	
 		
 		$this->data["page_head"]  = 'Volusion to BigCommerce customer Import';
 		$this->data["page_title"] = 'Volusion to BigCommerce customer Import';
@@ -47,7 +44,7 @@ class Customer extends CI_controller{
 	    return 0;
 	}
 
-	function getAllVoluCustomer() { 
+	function getAllStates() { 
 
 		$config_data  = $this->customermodel->getGeneralSetting();
 		
@@ -55,22 +52,58 @@ class Customer extends CI_controller{
 		$loginemail 		= $config_data['login_email'];
 		$encryptedpassword 	= $config_data['encryptedpassword'];
 
+		$volusion_API_URL	= $storeurl_volusion.'net/WebService.aspx?Login='.$loginemail.'&EncryptedPassword='.$encryptedpassword;
+
 		// Get customer information form volusion
-		$customer_data = @file_get_contents($storeurl_volusion."/net/WebService.aspx?Login=".$loginemail."&EncryptedPassword=".$encryptedpassword."&EDI_Name=Generic\Customers&SELECT_Columns=*");
+		// $customer_data = @file_get_contents($storeurl_volusion."/net/WebService.aspx?Login=".$loginemail."&EncryptedPassword=".$encryptedpassword."&EDI_Name=Generic\state&SELECT_Columns=*");
 							
-		$customer_data_e 	  = simplexml_load_string($customer_data);
-		$customer_data_decode = json_encode($customer_data_e);
-		$customer_data_res 	  = json_decode($customer_data_decode,TRUE);
+		// $customer_data_e 	  = simplexml_load_string($customer_data);
+		// $customer_data_decode = json_encode($customer_data_e);
+		// $customer_data_res 	  = json_decode($customer_data_decode,TRUE);
 		
-		// $customer_details 	 = array();
-		// $customer_details 	 = $customer_data_res['Products'];
+		// // $customer_details 	 = array();
+		// // $customer_details 	 = $customer_data_res['Products'];
+
+		$customer_data 		= @file_get_contents($volusion_API_URL."&EDI_Name=Generic\Customers&SELECT_Columns=*&WHERE_Column=CustomerID&WHERE_Value=7131");
+		$customer_datas		= simplexml_load_string($customer_data);
+		$json 				= json_encode($customer_datas);
+		$customer_data_f 	= json_decode($json,TRUE);
+		$customer_details	= array();
+		$customer_details 	= $customer_data_f['Customers'];
+		
+		// echo '<pre>';
+		// print_r($customer_details);
+		// exit;
 
 		echo '<pre>';
-		print_r($customer_data_res);
+		print_r($customer_details);
 		exit;
+	}
+
+	function getAllVoluCustomer() { 
+
+		// $config_data  = $this->customermodel->getGeneralSetting();
+		
+		// $storeurl_volusion 	= $config_data['storeurl_volusion'];
+		// $loginemail 		= $config_data['login_email'];
+		// $encryptedpassword 	= $config_data['encryptedpassword'];
+
+		// // Get customer information form volusion
+		// $customer_data = @file_get_contents($storeurl_volusion."/net/WebService.aspx?Login=".$loginemail."&EncryptedPassword=".$encryptedpassword."&EDI_Name=Generic\Customers&SELECT_Columns=*");
+							
+		// $customer_data_e 	  = simplexml_load_string($customer_data);
+		// $customer_data_decode = json_encode($customer_data_e);
+		// $customer_data_res 	  = json_decode($customer_data_decode,TRUE);
+		
+		// // $customer_details 	 = array();
+		// // $customer_details 	 = $customer_data_res['Products'];
+
+		// echo '<pre>';
+		// print_r($customer_data_res);
+		// exit;
 
 
-		$csvFile = APPPATH."uploads/export/Customers_USJXSKU2QQ.csv";
+		$csvFile = APPPATH."uploads/export/26-03-2021/Customers_QMESMEPVKJ.csv";
 
 		$file_handle = fopen($csvFile, 'r');
         while (!feof($file_handle)) {
@@ -92,7 +125,7 @@ class Customer extends CI_controller{
         }			
 					
         fclose($file_handle);
-
+		
         unset($nbew_line_of_text[0]);
         unset($nbew_line_of_text[1]);
 	
@@ -101,8 +134,8 @@ class Customer extends CI_controller{
         foreach ($nbew_line_of_text as $value) {
 
         	$exit = $this->customermodel->exitcustomer($value['customerid']);
-
-			if(isset($exit) && !empty($exit) && $exit = 'no') {
+		
+			if(isset($exit) && !empty($exit) && $exit == 'no') {
 					        	
 				$emailaddress = '';
 				if(isset($value['emailaddress']) && !empty($value['emailaddress']));
@@ -120,6 +153,11 @@ class Customer extends CI_controller{
 	        	$cuesmer[] = $cust_inenst;
 	        }
         }
+
+		// echo '<pre>';
+		// print_r($cuesmer);
+		// exit;
+
 
 		if (isset($cuesmer) && !empty($cuesmer)) 
 		{	
@@ -230,29 +268,9 @@ class Customer extends CI_controller{
 		$customer_data['last_name'] 	= $customer_lastname;
 		$customer_data['company'] 		= $customer_companyname;
 		$customer_data['email'] 		= $customer_email;
-		// $customer_data['email'] 		= 'testing@1digitalagency.com';
+		// $customer_data['email'] 		= 'development.qatesting@gmail.com';
 		$customer_data['phone'] 		= $customer_phonenumber;
 		$customer_data['notes'] 		= $customer_note;
-
-		// $customer_address = array();
-		// $customer_address['first_name'] = $customer_firstname;
-		// $customer_address['last_name']	= $customer_lastname;
-		// $customer_address['company']	= $customer_companyname;
-		// $customer_address['street_1'] 	= $customer_address1;
-		// $customer_address['street_2'] 	= $customer_address2;
-		// $customer_address['city']		= $customer_city;
-		// $customer_address['state']		= $customer_state;
-		// $customer_address['zip']		= $customer_zipcode;
-		// $customer_address['country']	= $customer_country;
-		// $customer_address['phone']		= $customer_phonenumber;
-
-		// echo '<pre>';
-		// print_r($customer_data);
-		// echo '<pre>';
-		// print_r($customer_address);
-		// exit;
-
-		// exit;
 
 		$getcustomer = Bigcommerce::getCustomers(array("email" => $customer_data['email']));
 		
