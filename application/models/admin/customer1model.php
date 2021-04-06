@@ -1,5 +1,5 @@
 <?php
-class customermodel extends CI_Model{
+class customer1model extends CI_Model{
 	var $table_name	= "";
 	function __construct() {
 		$this->customer_table 	= "customers";
@@ -25,7 +25,7 @@ class customermodel extends CI_Model{
 	}
 
 	function getcustomer() {
-		$query = $this->db->query("select * from ".$this->customer_table." WHERE status = 'no' AND `error_msg` = '' ORDER BY customerid ASC limit 500");
+		$query = $this->db->query("select * from ".$this->customer_table." WHERE update_status = 'yes' and update_done = 'no' AND `bc_customer_id` != '' ORDER BY customerid DESC limit 500");
 		$customer_data  = $query->result_array();
 		return $customer_data;
 	}
@@ -45,7 +45,7 @@ class customermodel extends CI_Model{
 	}
 	
 	function updatecustomerstatus($customer_id,$bc_cust_id,$message) {
-		$this->db->query("UPDATE ".$this->customer_table." SET status = 'yes', bc_customer_id = '".$bc_cust_id."',error_msg = '".$message."' WHERE customerid = '".$customer_id."'");
+		$this->db->query("UPDATE ".$this->customer_table." SET update_done = 'yes', error_msg = '' WHERE customerid = '".$customer_id."'");
 	}
 	
 	function updatecustomerMessage($customer_id, $error) {

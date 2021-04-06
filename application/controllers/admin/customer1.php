@@ -1,12 +1,12 @@
 <?php 
 use Bigcommerce\Api\Client as Bigcommerce;
-class Customer extends CI_controller{
+class Customer1 extends CI_controller{
 	
-	function customer()
+	function __construct()
 	{
 		parent::__construct();	
 		$this->load->library('bigcommerceapi');
-		$this->load->model("admin/customermodel");
+		$this->load->model("admin/customer1model");
 		error_reporting(E_ALL);
 		ini_set('display_errors', 1);
 		
@@ -20,13 +20,13 @@ class Customer extends CI_controller{
 		$this->data["page_head"]  = 'Volusion to BigCommerce customer Import';
 		$this->data["page_title"] = 'Volusion to BigCommerce customer Import';
 		
-		$customer_data = $this->customermodel->getcustomer();
+		$customer_data = $this->customer1model->getcustomer();
 		$this->data['total_customer'] = count($customer_data);
 		$this->data['customer_data']  = $customer_data;
 		
 		$this->load->view("admin/common/header",$this->data);
 		$this->data['left_nav']=$this->load->view('admin/common/leftmenu',$this->data,true);	
-		$this->load->view("admin/customer/list",$this->data);
+		$this->load->view("admin/customer/list1",$this->data);
 		$this->load->view("admin/common/footer");				
 	}
 	
@@ -46,7 +46,7 @@ class Customer extends CI_controller{
 
 	function getAllStates() { 
 
-		$config_data  = $this->customermodel->getGeneralSetting();
+		$config_data  = $this->customer1model->getGeneralSetting();
 		
 		$storeurl_volusion 	= $config_data['storeurl_volusion'];
 		$loginemail 		= $config_data['login_email'];
@@ -82,7 +82,7 @@ class Customer extends CI_controller{
 
 	function getAllVoluCustomer() { 
 
-		// $config_data  = $this->customermodel->getGeneralSetting();
+		// $config_data  = $this->customer1model->getGeneralSetting();
 		
 		// $storeurl_volusion 	= $config_data['storeurl_volusion'];
 		// $loginemail 		= $config_data['login_email'];
@@ -133,7 +133,7 @@ class Customer extends CI_controller{
 
         foreach ($nbew_line_of_text as $value) {
 
-        	$exit = $this->customermodel->exitcustomer($value['customerid']);
+        	$exit = $this->customer1model->exitcustomer($value['customerid']);
 		
 			if(isset($exit) && !empty($exit) && $exit == 'no') {
 					        	
@@ -173,12 +173,16 @@ class Customer extends CI_controller{
         }
     }
 		 
-	function importCustomer() {
+	function updateCustomer() {
 
-		$customer_id = $this->input->get('code');
-		//$email	 	 = $this->input->get('email');
+		// echo '<pre>';
+		// print_r($_GET);
+		// exit;
+
+		$customer_id 	= $this->input->get('code');
+		$bc_customer_id	= $this->input->get('email');
 		
-		$config_data  = $this->customermodel->getGeneralSetting();
+		$config_data  = $this->customer1model->getGeneralSetting();
 		
 		$storeurl_volusion 	= $config_data['storeurl_volusion'];
 		$loginemail 		= $config_data['login_email'];
@@ -205,17 +209,15 @@ class Customer extends CI_controller{
 		Bigcommerce::verifyPeer(false); // SSL verify False 		
 		Bigcommerce::failOnError(); 	// Display error exception on
 								
-		$customer_email = '';
-		if(isset($customer_details['EmailAddress']) && !empty($customer_details['EmailAddress'])){
-			$customer_email = trim($customer_details['EmailAddress']);
-		}
 		$customer_firstname = '';
 		if(isset($customer_details['FirstName']) && !empty($customer_details['FirstName'])){
-			$customer_firstname = trim($customer_details['FirstName']);
+			$customer_firstname_s = trim($customer_details['FirstName']);
+			$customer_firstname = mb_convert_encoding($customer_firstname_s, "Windows-1252", "auto");
 		}
 		$customer_lastname = '';
 		if(isset($customer_details['LastName']) && !empty($customer_details['LastName'])){
-			$customer_lastname = trim($customer_details['LastName']);
+			$customer_lastname_s = trim($customer_details['LastName']);
+			$customer_lastname = mb_convert_encoding($customer_lastname_s, "Windows-1252", "auto");
 		}
 		$customer_companyname = '';
 		if(isset($customer_details['CompanyName']) && !empty($customer_details['CompanyName'])){
@@ -236,11 +238,15 @@ class Customer extends CI_controller{
 		}
 		$customer_address1 = '';
 		if(isset($customer_details['BillingAddress1']) && !empty($customer_details['BillingAddress1'])){
-			$customer_address1 = trim($customer_details['BillingAddress1']);
+			$customer_address1_s = $customer_details['BillingAddress1'];
+			$customer_address1 = iconv("windows-1256", "utf-8//TRANSLIT//IGNORE", $customer_address1_s);
+			// $customer_address1 = $mb_convert_encoding($customer_address1_s, "Windows-1252", "auto");
 		}
 		$customer_address2 = '';
 		if(isset($customer_details['BillingAddress2']) && !empty($customer_details['BillingAddress2'])){
-			$customer_address2 = trim($customer_details['BillingAddress2']);
+			$customer_address2_s = $customer_details['BillingAddress2'];
+			$customer_address2 = iconv("windows-1256", "utf-8//TRANSLIT//IGNORE", $customer_address2_s);
+			// $customer_address2 = $mb_convert_encoding($customer_address2_s, "Windows-1252", "auto");
 		}
 		$customer_city = '';
 		if(isset($customer_details['City']) && !empty($customer_details['City'])){
@@ -254,87 +260,112 @@ class Customer extends CI_controller{
 		
 		$customer_state = '';
 		if(isset($customer_details['State']) && !empty($customer_details['State'])){
-			$cust_state = $this->customermodel->GetState($customer_details['State'], $customer_country);
+			$cust_state = $this->customer1model->GetState($customer_details['State'], $customer_country);
 			$customer_state = trim($cust_state);
 		}
 				
 		$customer_zipcode = '';
 		if(isset($customer_details['PostalCode']) && !empty($customer_details['PostalCode'])){
 			$customer_zipcode = trim($customer_details['PostalCode']);
-		}		
+		}
 		
 		$customer_data = array();
 		$customer_data['first_name'] 	= $customer_firstname;
 		$customer_data['last_name'] 	= $customer_lastname;
-		$customer_data['company'] 		= $customer_companyname;
-		// $customer_data['email'] 		= $customer_email;
-		$customer_data['email'] 		= 'testing@1digitalagency.com';
-		$customer_data['phone'] 		= $customer_phonenumber;
-		$customer_data['notes'] 		= $customer_note;
-
-		$getcustomer = Bigcommerce::getCustomers(array("email" => $customer_data['email']));
 		
-		if(isset($getcustomer) && !empty($getcustomer)) {		
+		// $customer_data['company'] 	= $customer_companyname;
+		// $customer_data['email'] 		= $customer_email;
+		// $customer_data['email'] 		= 'testing@1digitalagency.com';
+		// $customer_data['phone'] 		= $customer_phonenumber;
+		// $customer_data['notes'] 		= $customer_note;
 
-			echo $customer_id.' - Customer already exiest...<br>';
-			$message = 'Customer already exiest...';
-			$this->customermodel->updatecustomerstatus($customer_id,'',$message);				
 
-		} else {		
-			
-			try	{
-				$Customer = Bigcommerce::createCustomer($customer_data);
-	        		if(isset($Customer) && empty($Customer)) {
-	            	throw new Exception('Bigcommerce\Api\Error');
-	       	 	} else {
+		// echo '<pre>';
+		// print_r($customer_data);
+		// // print_r($customer_address);
+		// exit;
 
-					echo $Customer->id.' - Customer import succesfully..<br>';
-					$message = 'Customer import succesfully...';
-					$this->customermodel->updatecustomerstatus($customer_id,$Customer->id,$message);
+
+		try	{
+			$Customer = Bigcommerce::updateCustomer($bc_customer_id,$customer_data);
+				if(isset($Customer) && empty($Customer)) {
+				throw new Exception('Bigcommerce\Api\Error');
+			} else {
+
+				echo $bc_customer_id.' - Customer update succesfully...<br>';
+				$message = 'Customer update succesfully...';
+
+				$this->customer1model->updatecustomerstatus($customer_id,$Customer->id,$message);
+
+				$curl = curl_init();
+
+				curl_setopt_array($curl, array(
+				CURLOPT_URL => "https://api.bigcommerce.com/stores/9n4xcihrak/v2/customers/".$bc_customer_id."/addresses",
+				CURLOPT_RETURNTRANSFER => true,
+				CURLOPT_ENCODING => "",
+				CURLOPT_MAXREDIRS => 10,
+				CURLOPT_TIMEOUT => 30,
+				CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+				CURLOPT_CUSTOMREQUEST => "DELETE",
+				CURLOPT_HTTPHEADER => array(
+					"accept: application/json",
+					"content-type: application/json",
+					"x-auth-token: k284xhm2k9fxlgxzwbnom02n45sbxne"
+				),
+				));
+
+				$response = curl_exec($curl);
+				$err = curl_error($curl);
+
+				curl_close($curl);
+
+				if ($err) {
+				echo "cURL Error #:" . $err;
+				} else {
+				echo $response;
+				}
+								
+				$customer_address = array();
+				if(isset($Customer->id) && !empty($Customer->id)){
 					
-					$customer_address = array();
-					if(isset($Customer->id) && !empty($Customer->id)){
-						
-						$customer_address['first_name'] = $customer_firstname;
-						$customer_address['last_name']	= $customer_lastname;
-						$customer_address['company']	= $customer_companyname;
-						$customer_address['street_1'] 	= $customer_address1;
-						$customer_address['street_2'] 	= $customer_address2;
-						$customer_address['city']		= $customer_city;
-						$customer_address['state']		= $customer_state;
-						$customer_address['zip']		= $customer_zipcode;
-						$customer_address['country']	= $customer_country;
-						$customer_address['phone']		= $customer_phonenumber;
-						
-						try	{
-							$Customeradd = Bigcommerce::createCustomeraddress($Customer->id,$customer_address);
-				        	if(isset($Customeradd) && empty($Customeradd)) {
-				            	throw new Exception('Bigcommerce\Api\Error');
-				       	 	} else {
-				       	 		$error2 = 'Customer import successfully with address...';
-				       	 		echo $Customer->id.' - Customer import successfully with address...<br>';
+					$customer_address['first_name'] = $customer_firstname;
+					$customer_address['last_name']	= $customer_lastname;
+					$customer_address['company']	= $customer_companyname;
+					$customer_address['street_1'] 	= $customer_address1;
+					$customer_address['street_2'] 	= $customer_address2;
+					$customer_address['city']		= $customer_city;
+					$customer_address['state']		= $customer_state;
+					$customer_address['zip']		= $customer_zipcode;
+					$customer_address['country']	= $customer_country;
+					$customer_address['phone']		= $customer_phonenumber;
+					
+					try	{
+						$Customeradd = Bigcommerce::createCustomeraddress($Customer->id,$customer_address);
+								if(isset($Customeradd) && empty($Customeradd)) {
+								throw new Exception('Bigcommerce\Api\Error');
+							} else {
+								$error2 = 'Customer update successfully with address...';
+								echo $Customer->id.' - Customer update successfully with address...<br>';
 
-				       	 		// $this->customermodel->updateCustoAddMessage($customer_id, $error2);					       	 		
+								$this->customer1model->updateCustoAddMessage($customer_id, $error2);					       	 		
 							}
-			       	 	} catch(Exception $error) {
-							$error1 = $error->getMessage();
-							$error2 = 'Customer - '.$this->db->escape_str($error1);
+						} catch(Exception $error) {
+						$error1 = $error->getMessage();
+						$error2 = 'Customer update - '.$this->db->escape_str($error1);
 
-							echo $error2.'<br>';
+						echo $error2.'<br>';
 
-							// $this->customermodel->updateCustoAddMessage($customer_id, $error2);							
-						}
+						$this->customer1model->updateCustoAddMessage($customer_id, $error2);							
 					}
 				}
-		
-			} catch(Exception $error) {
-				$error1 = $error->getMessage();
-				$error2 = $this->db->escape_str($error1);
-				$this->customermodel->updatecustomerMessage($customer_id, $error2);
-			
-				echo $error1.'<br>';
 			}
-		}
+		} catch(Exception $error) {
+			$error1 = $error->getMessage();
+			$error2 = $this->db->escape_str($error1);
+			$this->customer1model->updatecustomerMessage($customer_id, $error2);
+		
+			echo $error1.'<br>';
+		}			
 	}	 
 }
 ?>
