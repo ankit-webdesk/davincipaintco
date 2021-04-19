@@ -211,11 +211,13 @@ class Customer extends CI_controller{
 		}
 		$customer_firstname = '';
 		if(isset($customer_details['FirstName']) && !empty($customer_details['FirstName'])){
-			$customer_firstname = trim($customer_details['FirstName']);
+			$customer_firstname_s = trim($customer_details['FirstName']);
+			$customer_firstname = mb_convert_encoding($customer_firstname_s, "Windows-1252", "auto");
 		}
 		$customer_lastname = '';
 		if(isset($customer_details['LastName']) && !empty($customer_details['LastName'])){
-			$customer_lastname = trim($customer_details['LastName']);
+			$customer_lastname_s = trim($customer_details['LastName']);
+			$customer_lastname = mb_convert_encoding($customer_lastname_s, "Windows-1252", "auto");
 		}
 		$customer_companyname = '';
 		if(isset($customer_details['CompanyName']) && !empty($customer_details['CompanyName'])){
@@ -236,11 +238,13 @@ class Customer extends CI_controller{
 		}
 		$customer_address1 = '';
 		if(isset($customer_details['BillingAddress1']) && !empty($customer_details['BillingAddress1'])){
-			$customer_address1 = trim($customer_details['BillingAddress1']);
+			$customer_address1_s = $customer_details['BillingAddress1'];
+			$customer_address1 = iconv("windows-1256", "utf-8//TRANSLIT//IGNORE", $customer_address1_s);
 		}
 		$customer_address2 = '';
 		if(isset($customer_details['BillingAddress2']) && !empty($customer_details['BillingAddress2'])){
-			$customer_address2 = trim($customer_details['BillingAddress2']);
+			$customer_address2_s = $customer_details['BillingAddress2'];
+			$customer_address2 = iconv("windows-1256", "utf-8//TRANSLIT//IGNORE", $customer_address2_s);
 		}
 		$customer_city = '';
 		if(isset($customer_details['City']) && !empty($customer_details['City'])){
@@ -267,8 +271,8 @@ class Customer extends CI_controller{
 		$customer_data['first_name'] 	= $customer_firstname;
 		$customer_data['last_name'] 	= $customer_lastname;
 		$customer_data['company'] 		= $customer_companyname;
-		// $customer_data['email'] 		= $customer_email;
-		$customer_data['email'] 		= 'testing@1digitalagency.com';
+		$customer_data['email'] 		= $customer_email;
+		// $customer_data['email'] 		= 'testing@1digitalagency.com';
 		$customer_data['phone'] 		= $customer_phonenumber;
 		$customer_data['notes'] 		= $customer_note;
 

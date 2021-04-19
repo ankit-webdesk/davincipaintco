@@ -41,45 +41,45 @@
 
 						<h3 class="form-section">Volusion Setting</h3>
 
-							<div class="row">
-								<div class="col-md-12">
-									<div class="form-group">
-										<label class="control-label col-md-3">Store URL</label>
-										<div class="col-md-9">
-											<div class="input-icon right">
-												<i class="fa"></i>
-												<input value="<?php echo $settingdata["storeurl_volusion"] ?>" id="storeurl_volusion" name="storeurl_volusion" type="text" class="form-control">
-											</div>	
-										</div>
+						<div class="row">
+							<div class="col-md-12">
+								<div class="form-group">
+									<label class="control-label col-md-3">Store URL</label>
+									<div class="col-md-9">
+										<div class="input-icon right">
+											<i class="fa"></i>
+											<input value="<?php echo $settingdata["storeurl_volusion"] ?>" id="storeurl_volusion" name="storeurl_volusion" type="text" class="form-control">
+										</div>	
 									</div>
 								</div>
 							</div>
-							<div class="row">
-								<div class="col-md-12">
-									<div class="form-group">
-										<label class="control-label col-md-3">Login Email</label>
-										<div class="col-md-9">
-											<div class="input-icon right">
-												<i class="fa"></i>
-												<input value="<?php echo $settingdata["login_email"] ?>" id="login_email" name="login_email" type="text" class="form-control">
-											</div>	
-										</div>
+						</div>
+						<div class="row">
+							<div class="col-md-12">
+								<div class="form-group">
+									<label class="control-label col-md-3">Login Email</label>
+									<div class="col-md-9">
+										<div class="input-icon right">
+											<i class="fa"></i>
+											<input value="<?php echo $settingdata["login_email"] ?>" id="login_email" name="login_email" type="text" class="form-control">
+										</div>	
 									</div>
 								</div>
 							</div>
-							<div class="row">
-								<div class="col-md-12">
-									<div class="form-group">
-										<label class="control-label col-md-3">Encrypted Password</label>
-										<div class="col-md-9">
-											<div class="input-icon right">
-												<i class="fa"></i>
-												<input value="<?php echo $settingdata["encryptedpassword"] ?>" id="encryptedpassword" name="encryptedpassword" type="text" class="form-control">
-											</div>	
-										</div>
+						</div>
+						<div class="row">
+							<div class="col-md-12">
+								<div class="form-group">
+									<label class="control-label col-md-3">Encrypted Password</label>
+									<div class="col-md-9">
+										<div class="input-icon right">
+											<i class="fa"></i>
+											<input value="<?php echo $settingdata["encryptedpassword"] ?>" id="encryptedpassword" name="encryptedpassword" type="text" class="form-control">
+										</div>	
 									</div>
 								</div>
 							</div>
+						</div>
 							
 						<h3 class="form-section">BigCommerce Setting</h3>
 							<div class="row">

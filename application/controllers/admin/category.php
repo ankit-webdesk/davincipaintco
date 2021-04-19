@@ -162,7 +162,7 @@ class Category extends CI_Controller {
 			$category_array['name'] 		=  '';
 			if(isset($categoryname) && !empty($categoryname)) {
 				$category_array['name']		= substr($categoryname,0,50);
-			}
+			} 
 			
 			$category_array['description']	=  '';
 			if(isset($volusion_cat_details['categorydescription']) && !empty($volusion_cat_details['categorydescription'])) {

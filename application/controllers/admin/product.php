@@ -229,18 +229,12 @@ class Product extends CI_Controller
 			$ProductDescription .= '<div class="ProductDescription_AbovePricing">'.$description_p_ProductDescription_AbovePricing.'</div>';
 		}
 
-		echo $ProductDescription.' <br>';
-
 		$product_array['description'] = '';
 
 		$ProductDescription_s  =  mb_convert_encoding($ProductDescription, "Windows-1252", "auto");
 		
 		// $ProductDescription_s = iconv("windows-1256", "utf-8//TRANSLIT//IGNORE", $ProductDescription);
 		$product_array['description'] = $ProductDescription_s;
-
-		echo '<pre>';
-		print_r($product_array);
-		exit;
 
 		// Product TechSpecs
 		$product_warranty = '';
@@ -265,10 +259,12 @@ class Product extends CI_Controller
 			$product_warranty .= '<div class="ExtInfo">'.$description_p_ExtInfo.'</div>';
 		}
 
+		$product_warranty_s  =  mb_convert_encoding($product_warranty, "Windows-1252", "auto");
+		
 		$product_array['warranty'] = '';
-		$product_array['warranty'] = $product_warranty;
+		$product_array['warranty'] = $product_warranty_s;
 
-		// Free Shipping
+		// Free Shipping 
 		$product_array['is_free_shipping'] = true;
 		if(isset($product_details['FreeShippingItem']) && !empty($product_details['FreeShippingItem']) && $product_details['FreeShippingItem'] == 'N'){
 			$product_array['is_free_shipping'] =  false;
