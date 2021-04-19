@@ -25,7 +25,7 @@ class customermodel extends CI_Model{
 	}
 
 	function getcustomer() {
-		$query = $this->db->query("select * from ".$this->customer_table." WHERE status = 'no' limit 5000");
+		$query = $this->db->query("select * from ".$this->customer_table." WHERE status = 'no' AND `error_msg` = '' ORDER BY customerid ASC limit 500");
 		$customer_data  = $query->result_array();
 		return $customer_data;
 	}

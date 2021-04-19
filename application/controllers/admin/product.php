@@ -37,12 +37,64 @@ class Product extends CI_Controller
 		$this->load->view("admin/common/footer");
 	}
 
-	public function ImportProduct() { 
+	public function getProductVideo() { 
 
 		$product_code = $code = $this->input->get('code');
 
 		$config_data  = $this->productmodel->getGeneralSetting();
 				
+		$storeurl_volusion 	= $config_data['storeurl_volusion'];
+		$loginemail 		= $config_data['login_email'];
+		$encryptedpassword 	= $config_data['encryptedpassword'];
+
+		// Get product information form volusion
+		$product_data        = @file_get_contents($storeurl_volusion."/net/WebService.aspx?Login=".$loginemail."&EncryptedPassword=".$encryptedpassword."&EDI_Name=Generic/youtubevideo");
+							
+		$product_data_e 	 = simplexml_load_string($product_data);
+		$product_data_decode = json_encode($product_data_e);
+		$product_data_res 	 = json_decode($product_data_decode,TRUE);
+		$product_details 	 = array();
+
+		$product_details 	 = $product_data_res['Table'];
+
+		$videos = array();
+		if(isset($product_details) && !empty($product_details)){
+			
+			foreach ($product_details as $value) {
+				
+				$video_inenst['productId'] 			= $value['ProductId'];
+				$video_inenst['youTubeId'] 			= $value['YouTubeId'];
+
+				$video_inenst['description'] 		= '';
+				if(isset($value['Description']) && !empty($value['Description'])) {
+					$video_inenst['description'] 	= $value['Description'];
+				}
+							
+				$video_inenst['sort'] 		 = $value['Sort'];
+				$video_inenst['ProductCode'] = $value['ProductCode'];
+
+				$videos[] = $video_inenst;
+			}
+		}
+		
+		// echo '<pre>';
+		// print_r($videos);
+		// exit;
+		if (isset($videos) && !empty($videos))  {	
+			$query = $this->db->insert_batch('youtube_video', $videos);
+        }
+
+		echo '<pre>';
+		print_r($product_details);
+		exit;
+	}
+
+	public function ImportProduct() { 
+
+		$product_code = $code = $this->input->get('code');
+
+		$config_data  = $this->productmodel->getGeneralSetting();
+			
 		$storeurl_volusion 	= $config_data['storeurl_volusion'];
 		$loginemail 		= $config_data['login_email'];
 		$encryptedpassword 	= $config_data['encryptedpassword'];
@@ -69,16 +121,27 @@ class Product extends CI_Controller
 
 		$product_details 	 = $product_data_res['Products'];
 
-		echo '<pre>';
-		print_r($product_data_res);
-		exit;
+		// echo '<pre>';
+		// print_r($product_data_res);
+		// exit;
 
+		$pro_video    = $this->productmodel->getProductVideos($product_details['ProductID']);
+		
+		// echo '<pre>';
+		// print_r($pro_video);
+		// exit;
+		
 		$product_array = array();
+		
+		// $ProductName   = $this->productmodel->getProductName($product_code);
 
 		//Product Name
 		$product_array['name'] = '';
 		if(isset($product_details['ProductName']) && !empty($product_details['ProductName'])){
-			$product_array['name'] = $product_details['ProductName'];
+			
+			$pro_name = preg_replace( '/<!--(.|\s)*?-->/' , '' , $product_details['ProductName'] );
+			
+			$product_array['name'] = trim($pro_name);
 		}
 
 		//Product SKU
@@ -91,24 +154,18 @@ class Product extends CI_Controller
 
 		//Product Price
 		$product_array['price'] = 0.00;
-		if(isset($product_details['ProductPrice']) && !empty($product_details['ProductPrice'])){
-			$product_array['price'] = number_format($product_details['ProductPrice'],2);
-		}
-		//Product SetupCost
-		$product_array['cost_price'] = 0.00;
-		if(isset($product_details['Vendor_Price']) && !empty($product_details['Vendor_Price'])){
-			$product_array['cost_price'] = number_format($product_details['Vendor_Price'],2);
-		}
-		//Product SalePrice
-		$product_array['sale_price'] = 0.00;
-		if(isset($product_details['SalePrice']) && !empty($product_details['SalePrice'])){
-			$product_array['sale_price'] = number_format($product_details['SalePrice'],2);
-		}
-		//Product ListPrice
-		$product_array['retail_price'] = 0.00;
+		
 		if(isset($product_details['ListPrice']) && !empty($product_details['ListPrice'])){
+			$product_array['price'] = number_format($product_details['ListPrice'],2);
+			$product_array['sale_price'] = number_format($product_details['ProductPrice'],2);
 			$product_array['retail_price'] = number_format($product_details['ListPrice'],2);
-		}		
+		 
+		} else {
+			if(isset($product_details['ProductPrice']) && !empty($product_details['ProductPrice'])){
+				$ProductPrice = number_format($product_details['ProductPrice'],2);
+				$product_array['price'] = str_replace(',', '', $ProductPrice);
+			}
+		}			
 		
 		//Product ProductWeight
 		$product_array['weight'] = '0';
@@ -143,47 +200,71 @@ class Product extends CI_Controller
 		$ProductDescription = '';
 		if(isset($product_details['ProductDescription']) && !empty($product_details['ProductDescription'])){
 			// Image Path replace 
-			$description_p = str_replace('src="hhttps://www.davincipaints.com/','src="/content',$product_details['ProductDescription']);
+			$description_p = str_replace('src="https://www.davincipaints.com/','src="/content/',$product_details['ProductDescription']);
+			$description_p = str_replace('src="v/','src="/content/v/',$description_p);
 			$description_p = str_replace('src="/v/','src="/content/v/',$description_p);
-			$ProductDescription = '<div class="ProductDescription">'.$description_p.'</div>';
+			$description_p = str_replace('href="https://www.davincipaints.com','href="/',$description_p);
+			$description_p = str_replace('â€™',"'",$description_p);
+			$ProductDescription = '<div class="product_description">'.$description_p.'</div>';
 		}
 		// Product Features
 		if(isset($product_details['ProductFeatures']) && !empty($product_details['ProductFeatures'])){
 			// Image Path replace 
-			$description_p_ProductFeatures = str_replace('src="https://www.davincipaints.com/','src="/content',$product_details['ProductFeatures']);
+			$description_p_ProductFeatures = str_replace('src="https://www.davincipaints.com/','src="/content/',$product_details['ProductFeatures']);
+			$description_p_ProductFeatures = str_replace('src="v/','src="/content/v/',$description_p_ProductFeatures);
 			$description_p_ProductFeatures = str_replace('src="/v/','src="/content/v/',$description_p_ProductFeatures);
-			$ProductDescription .= '<div class="ProductFeatures">'.$description_p_ProductFeatures.'</div>';
+			$description_p_ProductFeatures = str_replace('href="https://www.davincipaints.com','href="/',$description_p_ProductFeatures);
+			$description_p_ProductFeatures = str_replace('â€™',"'",$description_p_ProductFeatures);
+			$ProductDescription .= '<div class="product_features">'.$description_p_ProductFeatures.'</div>';
 		}
-		
-		// Product ExtInfo
-		if(isset($product_details['ExtInfo']) && !empty($product_details['ExtInfo'])){
-			// Image Path replace 
-			$description_p_ExtInfo = str_replace('src="https://www.davincipaints.com/','src="/content',$product_details['ExtInfo']);
-			$description_p_ExtInfo = str_replace('src="/v/','src="/content/v/',$description_p_ExtInfo);
-			$ProductDescription .= '<div class="ExtInfo">'.$description_p_ExtInfo.'</div>';
-		}
-		
+			
 		// Product ProductDescription_AbovePricing
 		if(isset($product_details['ProductDescription_AbovePricing']) && !empty($product_details['ProductDescription_AbovePricing'])){
 			// Image Path replace 
-			$description_p_ProductDescription_AbovePricing = str_replace('src="https://www.davincipaints.com/','src="/content',$product_details['ProductDescription_AbovePricing']);
+			$description_p_ProductDescription_AbovePricing = str_replace('src="https://www.davincipaints.com/','src="/content/',$product_details['ProductDescription_AbovePricing']);
+			$description_p_ProductDescription_AbovePricing = str_replace('src="v/','src="/content/v/',$description_p_ProductDescription_AbovePricing);
 			$description_p_ProductDescription_AbovePricing = str_replace('src="/v/','src="/content/v/',$description_p_ProductDescription_AbovePricing);
+			$description_p_ProductDescription_AbovePricing = str_replace('href="https://www.davincipaints.com','href="/',$description_p_ProductDescription_AbovePricing);
+			$description_p_ProductDescription_AbovePricing = str_replace('â€™',"'",$description_p_ProductDescription_AbovePricing);
 			$ProductDescription .= '<div class="ProductDescription_AbovePricing">'.$description_p_ProductDescription_AbovePricing.'</div>';
 		}
 
 		$product_array['description'] = '';
-		$product_array['description'] = $ProductDescription;
+
+		$ProductDescription_s  =  mb_convert_encoding($ProductDescription, "Windows-1252", "auto");
+		
+		// $ProductDescription_s = iconv("windows-1256", "utf-8//TRANSLIT//IGNORE", $ProductDescription);
+		$product_array['description'] = $ProductDescription_s;
 
 		// Product TechSpecs
-		$product_array['warranty'] = '';
+		$product_warranty = '';
 		if(isset($product_details['TechSpecs']) && !empty($product_details['TechSpecs'])){
 			// Image Path replace 
-			$TechSpecs_d = str_replace('src="https://www.davincipaints.com/','src="/content',$product_details['TechSpecs']);
+			$TechSpecs_d = str_replace('src="https://www.davincipaints.com/','src="/content/',$product_details['TechSpecs']);
+			$TechSpecs_d = str_replace('src="v/','src="/content/v/',$TechSpecs_d);
 			$TechSpecs_d = str_replace('src="/v/','src="/content/v/',$TechSpecs_d);
-			$product_array['warranty'] = '<div class="TechSpecs">'.$TechSpecs_d.'</div>';
+			$TechSpecs_d = str_replace('href="https://www.davincipaints.com','href="/',$TechSpecs_d);
+			$TechSpecs_d = str_replace('â€™',"'",$TechSpecs_d);
+			$product_warranty .= '<div class="TechSpecs">'.$TechSpecs_d.'</div>';
 		}
 
-		// Free Shipping
+		// Product ExtInfo
+		if(isset($product_details['ExtInfo']) && !empty($product_details['ExtInfo'])){
+			// Image Path replace 
+			$description_p_ExtInfo = str_replace('src="https://www.davincipaints.com/','src="/content/',$product_details['ExtInfo']);
+			$description_p_ExtInfo = str_replace('src="v/','src="/content/v/',$description_p_ExtInfo);
+			$description_p_ExtInfo = str_replace('src="/v/','src="/content/v/',$description_p_ExtInfo);
+			$description_p_ExtInfo = str_replace('href="https://www.davincipaints.com','href="/',$description_p_ExtInfo);
+			$description_p_ExtInfo = str_replace('â€™',"'",$description_p_ExtInfo);
+			$product_warranty .= '<div class="ExtInfo">'.$description_p_ExtInfo.'</div>';
+		}
+
+		$product_warranty_s  =  mb_convert_encoding($product_warranty, "Windows-1252", "auto");
+		
+		$product_array['warranty'] = '';
+		$product_array['warranty'] = $product_warranty_s;
+
+		// Free Shipping 
 		$product_array['is_free_shipping'] = true;
 		if(isset($product_details['FreeShippingItem']) && !empty($product_details['FreeShippingItem']) && $product_details['FreeShippingItem'] == 'N'){
 			$product_array['is_free_shipping'] =  false;
@@ -319,6 +400,10 @@ class Product extends CI_Controller
 			$product_array['custom_fields'][$i]['value'] = $product_details['CustomField5'];
 		}
 		 
+		// echo '<pre>';
+		// print_r($product_array);
+		// exit;
+
 		$ProductCodenew = str_replace('/', '-fslash-', $product_code);
 		$ProductCodenew = str_replace(' ', '%20', $ProductCodenew);
 
@@ -356,10 +441,6 @@ class Product extends CI_Controller
 				}
 			}
 		}	
-
-		// echo '<pre>';
-		// print_r($imageurls);
-		// exit;
 
 		// $client_id		= $config_data['client_id'];
 		// $auth_token   	= $config_data['apitoken'];
@@ -456,10 +537,65 @@ class Product extends CI_Controller
 								echo $product_code." - ".$im." Product Image Create Successfully..<br>";	
 							} else {
 								$error1 = @$product_img_create->title;					
-								echo $product_code.' - Product Image Create Error '. $error1;							
+								echo $product_code.' - Product Image Create Error '. $error1;			
 							}
 						}
 					$s++;
+					}
+				}
+
+				if(isset($pro_video) && !empty($pro_video)) {
+					$vp = 0;
+					foreach($pro_video as $pVideo) {
+						$Videos = array();
+						$Videos['description'] = $pVideo['description'];
+						$Videos['sort_order']  = $pVideo['sort'];
+						$Videos['type'] 	   = 'youtube';
+						$Videos['video_id']    = $pVideo['youTubeId'];
+						
+						$encodedToken = base64_encode("".$config_data['client_id'].":".$config_data['apitoken']."");
+						$authHeaderString = 'Authorization: Basic ' . $encodedToken;
+						$Videos_data = json_encode($Videos);
+						
+						// $to_productid = 125;
+						
+						$curl = curl_init();
+						curl_setopt_array($curl, array(
+						CURLOPT_URL => "https://api.bigcommerce.com/stores/".$store_hash."/v3/catalog/products/".$to_productid."/videos",
+						CURLOPT_RETURNTRANSFER => true,
+						CURLOPT_ENCODING => "",
+						CURLOPT_MAXREDIRS => 10,
+						CURLOPT_TIMEOUT => 30,
+						CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+						CURLOPT_CUSTOMREQUEST => "POST",
+						CURLOPT_POSTFIELDS => $Videos_data,
+						CURLOPT_HTTPHEADER => array($authHeaderString,'Accept: application/json',
+							'Content-Type: application/json',
+							'X-Auth-Client: '.$config_data['client_id'].'',
+							'X-Auth-Token: '.$config_data['apitoken'].''),			  
+						));
+		
+						$video_response = curl_exec($curl);
+						$err = curl_error($curl);
+		
+						curl_close($curl);
+		
+						if ($err) {
+						echo "cURL Error #:" . $err;
+						} else {
+							$product_video_create = json_decode($video_response);
+		
+							// echo '<pre>';
+							// print_r($product_video_create);
+		
+							if(isset($product_video_create->data) && !empty($product_video_create->data)) { 
+								$imb = $vp + 1;
+								echo $product_code." - ".$imb." Product Video Create Successfully..<br>";	
+							} else {
+								$error1 = @$product_video_create->title;					
+								echo $product_code.' - '.$imb.' Product Video Create Error '. $error1;	
+							}
+						}
 					}
 				}
 			} else {
@@ -471,8 +607,157 @@ class Product extends CI_Controller
 
 				echo $product_code.' - Product Import Error '. $error1;
 			}
-		}
+		}		
+	}
+
+	public function updateProduct() { 
+
+		$product_code = $this->input->get('code');
+		$product_id   = $this->input->get('code1');
+
+		$config_data  = $this->productmodel->getGeneralSetting();
+			
+		$storeurl_volusion 	= $config_data['storeurl_volusion'];
+		$loginemail 		= $config_data['login_email'];
+		$encryptedpassword 	= $config_data['encryptedpassword'];
+
+		$bcstoreurl  	= $config_data['storeurl'];
+		$client_id		= $config_data['client_id'];
+		$auth_token   	= $config_data['apitoken'];
+		$store_hash    	= $config_data['storehash'];
 		
+		// Bc class connection
+		Bigcommerce::configure(array('client_id' => $client_id,'auth_token' => $auth_token,'store_hash' => $store_hash));	
+		// SSL verify False
+		Bigcommerce::verifyPeer(false);
+ 		// Display error exception on
+		Bigcommerce::failOnError();			
+
+		// Get product information form volusion
+		$product_data        = @file_get_contents($storeurl_volusion."/net/WebService.aspx?Login=".$loginemail."&EncryptedPassword=".$encryptedpassword."&EDI_Name=Generic\Products&SELECT_Columns=*&WHERE_Column=ProductCode&WHERE_Value=".str_replace(' ','%20',$product_code)."");
+							
+		$product_data_e 	 = simplexml_load_string($product_data);
+		$product_data_decode = json_encode($product_data_e);
+		$product_data_res 	 = json_decode($product_data_decode,TRUE);
+		$product_details 	 = array();
+
+		$product_details 	 = $product_data_res['Products'];
+
+		// Product Description 
+		$ProductDescription = '';
+		if(isset($product_details['ProductDescription']) && !empty($product_details['ProductDescription'])){
+			// Image Path replace 
+			$description_p = str_replace('src="https://www.davincipaints.com/','src="/content/',$product_details['ProductDescription']);
+			$description_p = str_replace('src="v/','src="/content/v/',$description_p);
+			$description_p = str_replace('src="/v/','src="/content/v/',$description_p);
+			$description_p = str_replace('href="https://www.davincipaints.com','href="/',$description_p);
+			$description_p = str_replace('â€™',"'",$description_p);
+			$ProductDescription = '<div class="product_description">'.$description_p.'</div>';
+		}
+		// Product Features
+		if(isset($product_details['ProductFeatures']) && !empty($product_details['ProductFeatures'])){
+			// Image Path replace 
+			$description_p_ProductFeatures = str_replace('src="https://www.davincipaints.com/','src="/content/',$product_details['ProductFeatures']);
+			$description_p_ProductFeatures = str_replace('src="v/','src="/content/v/',$description_p_ProductFeatures);
+			$description_p_ProductFeatures = str_replace('src="/v/','src="/content/v/',$description_p_ProductFeatures);
+			$description_p_ProductFeatures = str_replace('href="https://www.davincipaints.com','href="/',$description_p_ProductFeatures);
+			$description_p_ProductFeatures = str_replace('â€™',"'",$description_p_ProductFeatures);
+			$ProductDescription .= '<div class="product_features">'.$description_p_ProductFeatures.'</div>';
+		}
+			
+		// Product ProductDescription_AbovePricing
+		if(isset($product_details['ProductDescription_AbovePricing']) && !empty($product_details['ProductDescription_AbovePricing'])){
+			// Image Path replace 
+			$description_p_ProductDescription_AbovePricing = str_replace('src="https://www.davincipaints.com/','src="/content/',$product_details['ProductDescription_AbovePricing']);
+			$description_p_ProductDescription_AbovePricing = str_replace('src="v/','src="/content/v/',$description_p_ProductDescription_AbovePricing);
+			$description_p_ProductDescription_AbovePricing = str_replace('src="/v/','src="/content/v/',$description_p_ProductDescription_AbovePricing);
+			$description_p_ProductDescription_AbovePricing = str_replace('href="https://www.davincipaints.com','href="/',$description_p_ProductDescription_AbovePricing);
+			$description_p_ProductDescription_AbovePricing = str_replace('â€™',"'",$description_p_ProductDescription_AbovePricing);
+			$ProductDescription .= '<div class="ProductDescription_AbovePricing">'.$description_p_ProductDescription_AbovePricing.'</div>';
+		}
+
+		$ProductDescription_s  =  mb_convert_encoding($ProductDescription, "Windows-1252", "auto");
+		
+		$product_array['description'] = '';
+		$product_array['description'] = $ProductDescription_s;
+
+		// Product TechSpecs
+		$product_warranty = '';
+		if(isset($product_details['TechSpecs']) && !empty($product_details['TechSpecs'])){
+			// Image Path replace 
+			$TechSpecs_d = str_replace('src="https://www.davincipaints.com/','src="/content/',$product_details['TechSpecs']);
+			$TechSpecs_d = str_replace('src="v/','src="/content/v/',$TechSpecs_d);
+			$TechSpecs_d = str_replace('src="/v/','src="/content/v/',$TechSpecs_d);
+			$TechSpecs_d = str_replace('href="https://www.davincipaints.com','href="/',$TechSpecs_d);
+			$TechSpecs_d = str_replace('â€™',"'",$TechSpecs_d);
+			$product_warranty .= '<div class="TechSpecs">'.$TechSpecs_d.'</div>';
+		}
+
+		// Product ExtInfo
+		if(isset($product_details['ExtInfo']) && !empty($product_details['ExtInfo'])){
+			// Image Path replace 
+			$description_p_ExtInfo = str_replace('src="https://www.davincipaints.com/','src="/content/',$product_details['ExtInfo']);
+			$description_p_ExtInfo = str_replace('src="v/','src="/content/v/',$description_p_ExtInfo);
+			$description_p_ExtInfo = str_replace('src="/v/','src="/content/v/',$description_p_ExtInfo);
+			$description_p_ExtInfo = str_replace('href="https://www.davincipaints.com','href="/',$description_p_ExtInfo);
+			$description_p_ExtInfo = str_replace('â€™',"'",$description_p_ExtInfo);
+			$product_warranty .= '<div class="ExtInfo">'.$description_p_ExtInfo.'</div>';
+		}
+
+		$product_warranty_s  =  mb_convert_encoding($product_warranty, "Windows-1252", "auto");
+		
+		$product_array['warranty'] = '';
+		$product_array['warranty'] = $product_warranty_s;
+
+		// echo '<pre>';
+		// print_r($product_array);
+		// exit;
+
+		$encodedToken = base64_encode("".$config_data['client_id'].":".$config_data['apitoken']."");
+		$authHeaderString = 'Authorization: Basic ' . $encodedToken;
+		$products_data = json_encode($product_array);
+			
+		$curl = curl_init();
+		curl_setopt_array($curl, array(
+		  CURLOPT_URL => "https://api.bigcommerce.com/stores/".$store_hash."/v3/catalog/products/".$product_id,
+		  CURLOPT_RETURNTRANSFER => true,
+		  CURLOPT_ENCODING => "",
+		  CURLOPT_MAXREDIRS => 10,
+		  CURLOPT_TIMEOUT => 30,
+		  CURLOPT_HTTP_VERSION => CURL_HTTP_VERSION_1_1,
+		  CURLOPT_CUSTOMREQUEST => "PUT",
+		  CURLOPT_POSTFIELDS => $products_data,
+		  CURLOPT_HTTPHEADER => array($authHeaderString,'Accept: application/json',
+			'Content-Type: application/json',
+			'X-Auth-Client: '.$config_data['client_id'].'',
+			'X-Auth-Token: '.$config_data['apitoken'].''),
+		));
+
+		$response = curl_exec($curl);
+		$err = curl_error($curl);
+		curl_close($curl);
+
+		if($err) {
+			echo $err;
+		}  else  {
+		    $product_create = json_decode($response);
+			// echo '<pre>';
+			// print_r($product_create);
+
+		    if(isset($product_create->data) && !empty($product_create->data)) {
+
+				$this->productmodel->UpdateProductDisStatus($product_code);
+			
+				echo $product_code." - Product update Successfully..<br>";		
+
+			} else {
+
+				$error1 = @$product_create->title;					
+				$error2 = $this->db->escape_str($error1);
+	
+				echo $product_code.' - Product update Error '. $error1;
+			}
+		}		
 	}
 }
 ?>

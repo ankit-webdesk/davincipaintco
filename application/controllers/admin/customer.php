@@ -15,10 +15,7 @@ class Customer extends CI_controller{
 		include(APPPATH.'/third_party/bcapi/vendor/autoload.php');
 	}
 
-	function index()
-	{			
-		$session_data = $this->session->userdata('admin_session');
-		if(!isset($session_data) || empty($session_data))redirect('admin/login');
+	function index() {	
 		
 		$this->data["page_head"]  = 'Volusion to BigCommerce customer Import';
 		$this->data["page_title"] = 'Volusion to BigCommerce customer Import';
@@ -47,7 +44,7 @@ class Customer extends CI_controller{
 	    return 0;
 	}
 
-	function getAllVoluCustomer() { 
+	function getAllStates() { 
 
 		$config_data  = $this->customermodel->getGeneralSetting();
 		
@@ -55,22 +52,58 @@ class Customer extends CI_controller{
 		$loginemail 		= $config_data['login_email'];
 		$encryptedpassword 	= $config_data['encryptedpassword'];
 
+		$volusion_API_URL	= $storeurl_volusion.'net/WebService.aspx?Login='.$loginemail.'&EncryptedPassword='.$encryptedpassword;
+
 		// Get customer information form volusion
-		$customer_data = @file_get_contents($storeurl_volusion."/net/WebService.aspx?Login=".$loginemail."&EncryptedPassword=".$encryptedpassword."&EDI_Name=Generic\Customers&SELECT_Columns=*");
+		// $customer_data = @file_get_contents($storeurl_volusion."/net/WebService.aspx?Login=".$loginemail."&EncryptedPassword=".$encryptedpassword."&EDI_Name=Generic\state&SELECT_Columns=*");
 							
-		$customer_data_e 	  = simplexml_load_string($customer_data);
-		$customer_data_decode = json_encode($customer_data_e);
-		$customer_data_res 	  = json_decode($customer_data_decode,TRUE);
+		// $customer_data_e 	  = simplexml_load_string($customer_data);
+		// $customer_data_decode = json_encode($customer_data_e);
+		// $customer_data_res 	  = json_decode($customer_data_decode,TRUE);
 		
-		// $customer_details 	 = array();
-		// $customer_details 	 = $customer_data_res['Products'];
+		// // $customer_details 	 = array();
+		// // $customer_details 	 = $customer_data_res['Products'];
+
+		$customer_data 		= @file_get_contents($volusion_API_URL."&EDI_Name=Generic\country&SELECT_Columns=*");
+		$customer_datas		= simplexml_load_string($customer_data);
+		$json 				= json_encode($customer_datas);
+		$customer_data_f 	= json_decode($json,TRUE);
+		// $customer_details	= array();
+		// $customer_details 	= $customer_data_f['Customers'];
+		
+		// echo '<pre>';
+		// print_r($customer_details);
+		// exit;
 
 		echo '<pre>';
-		print_r($customer_data_res);
+		print_r($customer_data_f);
 		exit;
+	}
+
+	function getAllVoluCustomer() { 
+
+		// $config_data  = $this->customermodel->getGeneralSetting();
+		
+		// $storeurl_volusion 	= $config_data['storeurl_volusion'];
+		// $loginemail 		= $config_data['login_email'];
+		// $encryptedpassword 	= $config_data['encryptedpassword'];
+
+		// // Get customer information form volusion
+		// $customer_data = @file_get_contents($storeurl_volusion."/net/WebService.aspx?Login=".$loginemail."&EncryptedPassword=".$encryptedpassword."&EDI_Name=Generic\Customers&SELECT_Columns=*");
+							
+		// $customer_data_e 	  = simplexml_load_string($customer_data);
+		// $customer_data_decode = json_encode($customer_data_e);
+		// $customer_data_res 	  = json_decode($customer_data_decode,TRUE);
+		
+		// // $customer_details 	 = array();
+		// // $customer_details 	 = $customer_data_res['Products'];
+
+		// echo '<pre>';
+		// print_r($customer_data_res);
+		// exit;
 
 
-		$csvFile = APPPATH."uploads/export/Customers_USJXSKU2QQ.csv";
+		$csvFile = APPPATH."uploads/export/26-03-2021/Customers_QMESMEPVKJ.csv";
 
 		$file_handle = fopen($csvFile, 'r');
         while (!feof($file_handle)) {
@@ -92,7 +125,7 @@ class Customer extends CI_controller{
         }			
 					
         fclose($file_handle);
-
+		
         unset($nbew_line_of_text[0]);
         unset($nbew_line_of_text[1]);
 	
@@ -101,8 +134,8 @@ class Customer extends CI_controller{
         foreach ($nbew_line_of_text as $value) {
 
         	$exit = $this->customermodel->exitcustomer($value['customerid']);
-
-			if(isset($exit) && !empty($exit) && $exit = 'no') {
+		
+			if(isset($exit) && !empty($exit) && $exit == 'no') {
 					        	
 				$emailaddress = '';
 				if(isset($value['emailaddress']) && !empty($value['emailaddress']));
@@ -120,6 +153,11 @@ class Customer extends CI_controller{
 	        	$cuesmer[] = $cust_inenst;
 	        }
         }
+
+		// echo '<pre>';
+		// print_r($cuesmer);
+		// exit;
+
 
 		if (isset($cuesmer) && !empty($cuesmer)) 
 		{	
@@ -173,11 +211,13 @@ class Customer extends CI_controller{
 		}
 		$customer_firstname = '';
 		if(isset($customer_details['FirstName']) && !empty($customer_details['FirstName'])){
-			$customer_firstname = trim($customer_details['FirstName']);
+			$customer_firstname_s = trim($customer_details['FirstName']);
+			$customer_firstname = mb_convert_encoding($customer_firstname_s, "Windows-1252", "auto");
 		}
 		$customer_lastname = '';
 		if(isset($customer_details['LastName']) && !empty($customer_details['LastName'])){
-			$customer_lastname = trim($customer_details['LastName']);
+			$customer_lastname_s = trim($customer_details['LastName']);
+			$customer_lastname = mb_convert_encoding($customer_lastname_s, "Windows-1252", "auto");
 		}
 		$customer_companyname = '';
 		if(isset($customer_details['CompanyName']) && !empty($customer_details['CompanyName'])){
@@ -198,11 +238,13 @@ class Customer extends CI_controller{
 		}
 		$customer_address1 = '';
 		if(isset($customer_details['BillingAddress1']) && !empty($customer_details['BillingAddress1'])){
-			$customer_address1 = trim($customer_details['BillingAddress1']);
+			$customer_address1_s = $customer_details['BillingAddress1'];
+			$customer_address1 = iconv("windows-1256", "utf-8//TRANSLIT//IGNORE", $customer_address1_s);
 		}
 		$customer_address2 = '';
 		if(isset($customer_details['BillingAddress2']) && !empty($customer_details['BillingAddress2'])){
-			$customer_address2 = trim($customer_details['BillingAddress2']);
+			$customer_address2_s = $customer_details['BillingAddress2'];
+			$customer_address2 = iconv("windows-1256", "utf-8//TRANSLIT//IGNORE", $customer_address2_s);
 		}
 		$customer_city = '';
 		if(isset($customer_details['City']) && !empty($customer_details['City'])){
@@ -234,95 +276,16 @@ class Customer extends CI_controller{
 		$customer_data['phone'] 		= $customer_phonenumber;
 		$customer_data['notes'] 		= $customer_note;
 
-		// $customer_address = array();
-		// $customer_address['first_name'] = $customer_firstname;
-		// $customer_address['last_name']	= $customer_lastname;
-		// $customer_address['company']	= $customer_companyname;
-		// $customer_address['street_1'] 	= $customer_address1;
-		// $customer_address['street_2'] 	= $customer_address2;
-		// $customer_address['city']		= $customer_city;
-		// $customer_address['state']		= $customer_state;
-		// $customer_address['zip']		= $customer_zipcode;
-		// $customer_address['country']	= $customer_country;
-		// $customer_address['phone']		= $customer_phonenumber;
-
-		// echo '<pre>';
-		// print_r($customer_data);
-		// echo '<pre>';
-		// print_r($customer_address);
-		// exit;
-
-		// exit;
-
 		$getcustomer = Bigcommerce::getCustomers(array("email" => $customer_data['email']));
 		
-		if(isset($getcustomer) && !empty($getcustomer))
-		{			
-			if(isset($customer_data['first_name']) && empty($customer_data['first_name'])){
-				$customer_data['first_name'] = trim($getcustomer[0]->first_name);
-			}
+		if(isset($getcustomer) && !empty($getcustomer)) {		
+
+			echo $customer_id.' - Customer already exiest...<br>';
+			$message = 'Customer already exiest...';
+			$this->customermodel->updatecustomerstatus($customer_id,'',$message);				
+
+		} else {		
 			
-			if(isset($customer_data['last_name']) && empty($customer_data['last_name'])){
-				$customer_data['last_name'] = trim($getcustomer[0]->last_name);
-			}
-		
-			if(isset($customer_data['phone']) && empty($customer_data['phone'])){
-				$customer_data['phone'] = trim($getcustomer[0]->phone);
-			}	
-			
-			try	{
-				$Customer = Bigcommerce::updateCustomer($getcustomer[0]->id,$customer_data);
-	        		if(isset($Customer) && empty($Customer)) {
-	            	throw new Exception('Bigcommerce\Api\Error');
-	       	 	} else {
-
-					echo $Customer->id.' - Customer update succesfully...<br>';
-					$message = 'Customer update succesfully...';
-					$this->customermodel->updatecustomerstatus($customer_id,$Customer->id,$message);
-					
-					$customer_address = array();
-					if(isset($Customer->id) && !empty($Customer->id)){
-						
-						$customer_address['first_name'] = $customer_firstname;
-						$customer_address['last_name']	= $customer_lastname;
-						$customer_address['company']	= $customer_companyname;
-						$customer_address['street_1'] 	= $customer_address1;
-						$customer_address['street_2'] 	= $customer_address2;
-						$customer_address['city']		= $customer_city;
-						$customer_address['state']		= $customer_state;
-						$customer_address['zip']		= $customer_zipcode;
-						$customer_address['country']	= $customer_country;
-						$customer_address['phone']		= $customer_phonenumber;
-						
-						try	{
-							$Customeradd = Bigcommerce::createCustomeraddress($Customer->id,$customer_address);
-					        		if(isset($Customeradd) && empty($Customeradd)) {
-					            	throw new Exception('Bigcommerce\Api\Error');
-					       	 	} else {
-					       	 		$error2 = 'Customer update successfully with address...';
-					       	 		echo $Customer->id.' - Customer update successfully with address...<br>';
-
-					       	 		$this->customermodel->updateCustoAddMessage($customer_id, $error2);					       	 		
-								}
-				       	 	} catch(Exception $error) {
-							$error1 = $error->getMessage();
-							$error2 = 'Customer update - '.$this->db->escape_str($error1);
-
-							echo $error2.'<br>';
-
-							$this->customermodel->updateCustoAddMessage($customer_id, $error2);							
-						}
-					}
-				}
-			} catch(Exception $error) {
-				$error1 = $error->getMessage();
-				$error2 = $this->db->escape_str($error1);
-				$this->customermodel->updatecustomerMessage($customer_id, $error2);
-			
-				echo $error1.'<br>';
-			}
-
-		} else {				
 			try	{
 				$Customer = Bigcommerce::createCustomer($customer_data);
 	        		if(isset($Customer) && empty($Customer)) {
@@ -355,7 +318,7 @@ class Customer extends CI_controller{
 				       	 		$error2 = 'Customer import successfully with address...';
 				       	 		echo $Customer->id.' - Customer import successfully with address...<br>';
 
-				       	 		$this->customermodel->updateCustoAddMessage($customer_id, $error2);					       	 		
+				       	 		// $this->customermodel->updateCustoAddMessage($customer_id, $error2);					       	 		
 							}
 			       	 	} catch(Exception $error) {
 							$error1 = $error->getMessage();
@@ -363,7 +326,7 @@ class Customer extends CI_controller{
 
 							echo $error2.'<br>';
 
-							$this->customermodel->updateCustoAddMessage($customer_id, $error2);							
+							// $this->customermodel->updateCustoAddMessage($customer_id, $error2);							
 						}
 					}
 				}
@@ -377,135 +340,5 @@ class Customer extends CI_controller{
 			}
 		}
 	}	 
-
-	function usernotification()
-	{
-		$session_data = $this->session->userdata('admin_session');
-		if(!isset($session_data) || empty($session_data))redirect('admin/login');
-		
-		$this->data["page_head"]  = 'Volusion to BigCommerce customer reset password';
-		$this->data["page_title"] = 'Volusion to BigCommerce customer reset password';
-		
-		$customer_data = $this->customermodel->getcustomerresetpassword();
-		$this->data['total_customer'] = count($customer_data);
-		$this->data['customer_data']  = $customer_data;
-		
-		$this->load->view("admin/common/header",$this->data);
-		$this->data['left_nav']=$this->load->view('admin/common/leftmenu',$this->data,true);	
-		$this->load->view("admin/customer/customernotification",$this->data);
-		$this->load->view("admin/common/footer");
-	}
-	
-	function randomPassword() {
-		 $password = '';
-		 $charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-		 for($i = 0; $i < 8; $i++)
-		 {
-			 $random_int = mt_rand();
-			 $password .= $charset[$random_int % strlen($charset)];
-		 }
-		 return $password;
-	}
-		
-	function resetpasswrod()
-	{
-		$reset_password_error = APPPATH."third_party/customer/reset_password_error.xls";
-		$spreadsheet_reset_password = PHPExcel_IOFactory::load($reset_password_error);
-		$spreadsheet_reset_password->setActiveSheetIndex(0);
-		$worksheet_reset_password = $spreadsheet_reset_password->getActiveSheet();
-		
-		$customer_id = $this->input->get('code');
-		$column = $this->input->get('column');
-		$config_data = $this->customermodel->getGeneralSetting();
-		$store = '';
-		if(isset($config_data[0]['apiusername']) && !empty($config_data[0]['apiusername']) && isset($config_data[0]['apipath']) && !empty($config_data[0]['apipath']) && isset($config_data[0]['apitoken']) && !empty($config_data[0]['apitoken'])){
-			// BigCommerce API connection
-			$store = new Bigcommerceapi($config_data[0]['apiusername'], $config_data[0]['apipath'] , $config_data[0]['apitoken']);
-		}
-		
-		$password_g  = $this->randomPassword();
-		
-		$field_reset_password = array();
-		$field_reset_password['_authentication']['password'] = $password_g;
-		$reset_password = $store->put('/customers/'.$customer_id,$field_reset_password);
-		
-		
-		if(isset($reset_password['email']) && !empty($reset_password['email']))
-		{
-			$this->customermodel->updatestatus($customer_id);
-			
-			$store_url = $config_data[0]['storeurl'];
-			$username  = $reset_password['email'];
-			$password  = $password_g;
-			
-			$subject_activation = 'Your Password Has Been Changed!';
-						
-			$html_plan = '<div style="background-color:#ffffff;font-family:Verdana,Arial,Helvetica,sans-serif;font-size:15px;width:800px;margin:0px auto">
-				<div style="border-bottom:1px #0086c7 solid;margin-bottom:15px">
-					<h1 style="display:block;text-align:center;padding:30px 0px 10px">
-						<img src="http://cdn3.bigcommerce.com/s-fxjd74hwbl/product_images/logo_1466588892__47438.png">
-					</h1>    
-				</div>
-				
-				<div style="width:100%;margin-bottom:15px">
-					<h2 style="color:#444;font-weight:normal;font-size:15px"><span style="color:#000"><b>Your Password Has Been Changed!</b></h2>
-				</div>
-				<div style="width:100%;margin-bottom:15px">
-					<h2 style="color:#444;font-weight:normal;font-size:15px"><span style="color:#000">This email confirm that your password has been changed.</h2>
-				</div>
-				<div style="width:100%;margin-bottom:15px">
-					<h2 style="color:#444;font-weight:normal;font-size:15px"><span style="color:#000">To log on to the site, use the following credentials:</h2>
-				</div>
-				<div style="width:100%;margin-bottom:15px">
-					<h2 style="color:#444;font-weight:normal;font-size:15px"><span style="color:#000"><b>Store URL:</b> '.$store_url.'</h2>
-				</div>
-				<div style="width:100%;margin-bottom:15px">
-					<h2 style="color:#444;font-weight:normal;font-size:15px"><span style="color:#000"><b>Username:</b> '.$username.'</h2>
-				</div>
-				<div style="width:100%;margin-bottom:15px">
-					<h2 style="color:#444;font-weight:normal;font-size:15px"><span style="color:#000"><b>Password:</b> '.$password.'</h2>
-				</div>
-				<div style="width:100%;margin-bottom:15px">
-					<h2 style="color:#444;font-weight:normal;font-size:15px"><span style="color:#000">if you have any questions or encounter any problems logging in, please contact a site administrator <a href="mailto:sales@evrmemories.com">sales@evrmemories.com</a>.</h2>
-				</div>
-				<div style="width:100%;border-top:1px #0086c7 solid;">
-					<div style="clear:both"></div>
-					<div style="float:left;margin-right:10px;margin-top:15px">
-						<div style="float:left;font-size:14px;color:#333;font-weight:normal;">
-							Thanks,<br/> 
-							<span style="color:#0086c7;letter-spacing:1">
-								 '.$config_data[0]['storename'].'
-							</span>
-						</div>
-					</div>
-				</div>
-			</div>';
-			
-			$headers = "MIME-Version: 1.0" . "\r\n";
-			$headers .= "Content-type:text/html;charset=UTF-8" . "\r\n";
-			$headers .= 'From: <sales@evrmemories.com>' . "\r\n";
-			$to = $username;
-			@mail($to,$subject_activation,$html_plan,$headers);		
-
-			echo $username.' - Customer Password Has Been Changed!'	;
-		}
-		else
-		{
-			echo 'Customer Password Changed Error!!!';
-			$commnet = 'Customer Password Changed Error!!!';
-			
-			$column = $column + 1;
-			$worksheet_reset_password->setCellValueExplicit('A1','Customer ID', PHPExcel_Cell_DataType::TYPE_STRING);
-			$worksheet_reset_password->setCellValueExplicit('B1','Comment', PHPExcel_Cell_DataType::TYPE_STRING);
-			
-			$worksheet_reset_password->setCellValueExplicit('A'.$column,$customer_id, PHPExcel_Cell_DataType::TYPE_STRING);
-			$worksheet_reset_password->setCellValueExplicit('B'.$column,$commnet, PHPExcel_Cell_DataType::TYPE_STRING);
-			
-			$writer_reset_password = new PHPExcel_Writer_Excel2007($spreadsheet_reset_password);
-			$writer_reset_password->save($reset_password_error);
-			
-		}	
-			
-	}
 }
 ?>

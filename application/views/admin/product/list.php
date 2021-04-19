@@ -81,7 +81,8 @@
 								<tr>
 									<th width="5%">  # </th>
 									<th width="15%"> Product SKU </th>
-									<th width="50%"> Product Name </th>
+									<th width="15%"> BC Product ID </th>
+									<th width="30%"> Product Name </th>
 									<th class="numeric" width="30%"> Status </th>
 								</tr>
 							</thead>
@@ -91,9 +92,10 @@
 										$no=1;
 										foreach($product_data as $d) {	
 											?>
-											<tr <?php if($no==1) { echo 'class="start_process"'; } ?> data-code="<?php echo $d['productcode']; ?>">
+											<tr <?php if($no==1) { echo 'class="start_process"'; } ?> data-code="<?php echo $d['productcode']; ?>" data-code1="<?php echo $d['bc_product_id']; ?>">
 												<td><?php echo $no++ ;?></td>
 												<td><?php echo($d['productcode'])?></td>
+												<td><?php echo($d['bc_product_id'])?></td>
 												<td><?php echo($d['productname'])?></td>
 												<td class="numeric respose_tag">Pending</td>
 											</tr>
@@ -134,14 +136,17 @@ function sendRquest()
 	jQuery('#start_stop_action').addClass('glyphicon-pause');										
 
 	var code = jQuery('.start_process').attr('data-code');
+	var code1 = jQuery('.start_process').attr('data-code1');
 	if(code){
 		jQuery('.processing').removeClass('processing');
 		jQuery('.start_process').find('.respose_tag').html('Please wait...');
 		jQuery('.start_process').addClass('processing');
 		$.ajax({
-			url: '<?php echo $this->config->site_url();?>/admin/product/ImportProduct',
+			// url: '<?php echo $this->config->site_url();?>/admin/product/ImportProduct',
+			url: '<?php echo $this->config->site_url();?>/admin/product/updateProduct',
 			data: {
 				code: code,
+				code1: code1,
 				send:'yes'
 			},
 			error: function() {
