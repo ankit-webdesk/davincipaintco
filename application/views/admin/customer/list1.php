@@ -1,5 +1,3 @@
-<?php 		
-?>
 <div class="clearfix">
 </div>
 	<div class="page-container">
@@ -10,23 +8,25 @@
 				<div class="col-md-12">
 					<!-- BEGIN PAGE TITLE & BREADCRUMB-->
 					<h3 class="page-title">
-						Volusion to BigCommerce Product Import
+						1 Volusion to BigCommerce Customer Import 1
 					</h3>
 					<ul class="page-breadcrumb breadcrumb">
 						<li>
 							<i class="fa fa-home"></i>
-							<a href="<?php echo $this->config->site_url();?>admin/dashboard">
+							<a href="<?php echo $this->config->site_url();?>admin/customer">
 								<?php echo $this->lang->line('HOME');?>
 							</a>
+							<i class="fa fa-angle-right"></i>
 						</li>
 						<li>
-							Product Import
+							<a href="<?php echo $this->config->site_url();?>/admin/customer">
+								1 Customer Import 1
+							</a>
 						</li>
 					</ul>
 					<!-- END PAGE TITLE & BREADCRUMB-->
 				</div>
 			</div>
-			
 			
 			<div class="row" > 
 					<div class="col-lg-3 col-md-3 col-sm-6 col-xs-12">
@@ -36,7 +36,7 @@
 							</div>
 							<div class="details">
 								<div class="number">
-									 <?php echo $total_product; ?>
+									 <?php echo $total_customer; ?>
 								</div>
 								<div class="desc">
 									 Start Import
@@ -54,7 +54,7 @@
 							</div>
 							<div class="details">
 								<div class="number">
-									 <?php echo $total_product ?>
+									 <?php echo $total_customer ?>
 								</div>
 								<div class="desc">
 									 Pause
@@ -70,40 +70,55 @@
 			<div class="portlet box green">
 					<div class="portlet-title">
 						<div class="caption">
-							<i class="fa fa-cogs"></i>Products List 
-							<span><?php echo $total_product ?>/</span>
-							<span id="total_imported_product">0</span>
+							<i class="fa fa-cogs"></i>Customers List 
+							<span><?php echo $total_customer ?>/</span>
+							<span id="total_imported_customer">0</span>
 						</div>
 					</div>
 					<div class="portlet-body flip-scroll">
 						<table class="table table-bordered table-striped table-condensed flip-content">
 							<thead class="flip-content">
 								<tr>
-									<th width="5%">  # </th>
-									<th width="15%"> Product SKU </th>
-									<th width="15%"> BC Product ID </th>
-									<th width="30%"> Product Name </th>
-									<th class="numeric" width="30%"> Status </th>
+									<th width="5%">
+										 #
+									</th>
+									<th width="20%">
+										Customer id
+									</th>
+									<th width="20%">
+										BC Customer ID
+									</th>
+									<th width="20%">
+										Email Address
+									</th>
+									<th class="numeric" width="15%">
+										 Status
+									</th>
 								</tr>
 							</thead>
 							<tbody>
-								<?php if(isset($product_data) && !empty($product_data) && count($product_data) > 0) {
-
+								<?php 
+								
+									if(isset($customer_data) && !empty($customer_data) && count($customer_data)>0)
+									{
+										
+										
 										$no=1;
-										foreach($product_data as $d) {	
+										foreach($customer_data as $d) 
+										{	
 											?>
-											<tr <?php if($no==1) { echo 'class="start_process"'; } ?> data-code="<?php echo $d['productcode']; ?>" data-code1="<?php echo $d['bc_product_id']; ?>">
+											<tr <?php if($no==1) { echo 'class="start_process"'; } ?>  data-code="<?php echo $d['customerid'] ?>" data-email="<?php echo $d['bc_customer_id'] ?>" >
 												<td><?php echo $no++ ;?></td>
-												<td><?php echo($d['productcode'])?></td>
-												<td><?php echo($d['bc_product_id'])?></td>
-												<td><?php echo($d['productname'])?></td>
+												<td><?php echo($d['customerid'])?></td>
+												<td><?php echo($d['bc_customer_id'])?></td>
+												<td><?php echo($d['emailaddress'])?></td>
 												<td class="numeric respose_tag">Pending</td>
 											</tr>
 											<?php 
 										}
-									} else { ?>
+									}else{ ?>
 										<tr>
-											<td  colspan="4" class="numeric respose_tag">Please try again</td>
+											<td  colspan="3" class="numeric respose_tag">Please try again</td>
 										</tr>
 								<?php } ?>
 							</tbody>
@@ -134,19 +149,17 @@ function sendRquest()
 	jQuery('#start_stop_controller').show();
 	jQuery('#start_stop_action').removeClass('glyphicon-play');
 	jQuery('#start_stop_action').addClass('glyphicon-pause');										
-
-	var code = jQuery('.start_process').attr('data-code');
-	var code1 = jQuery('.start_process').attr('data-code1');
+	var code=jQuery('.start_process').attr('data-code');
+	var email=jQuery('.start_process').attr('data-email');
 	if(code){
 		jQuery('.processing').removeClass('processing');
 		jQuery('.start_process').find('.respose_tag').html('Please wait...');
 		jQuery('.start_process').addClass('processing');
 		$.ajax({
-			// url: '<?php echo $this->config->site_url();?>/admin/product/ImportProduct',
-			url: '<?php echo $this->config->site_url();?>/admin/product/updateProduct',
+			url: '<?php echo $this->config->site_url();?>/admin/customer1/updateCustomer',
 			data: {
 				code: code,
-				code1: code1,
+				email:email,
 				send:'yes'
 			},
 			error: function() {
@@ -157,7 +170,7 @@ function sendRquest()
 					sendRquest();
 			},
 			success: function(data) {
-				$('#total_imported_product').html( eval($('#total_imported_product').html())+1);
+				$('#total_imported_customer').html( eval($('#total_imported_customer').html())+1);
 				var obj=jQuery('.start_process');
 					obj.find('.respose_tag').html(data);
 					obj.next().addClass('start_process');

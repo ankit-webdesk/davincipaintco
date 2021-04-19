@@ -16,8 +16,14 @@ class Productmodel extends CI_Model
 	}
 
 	public function getproductdata() {
-		$query_product_bc_data = $this->db->query("SELECT * FROM ".$this->product_table." WHERE bc_product_id = '' and message = '' and status = 'no'");
+		// $query_product_bc_data = $this->db->query("SELECT * FROM ".$this->product_table." WHERE bc_product_id = '' and message = '' and status = 'no'");
+		$query_product_bc_data = $this->db->query("SELECT * FROM ".$this->product_table." WHERE bc_product_id != '' and dis_update_status = 'no'");
 		return $query_product_bc_data->result_array();
+	}
+
+	public function getProductName($Productcode) {
+		$query_product = $this->db->query("SELECT productname FROM `products` WHERE productcode LIKE '".$Productcode."'");
+		return  $query_product->row_array();
 	}
 
 	public function getProductCategory($Productcode) {
@@ -46,6 +52,10 @@ class Productmodel extends CI_Model
 
 	public function UpdateProductStatus($product_code,$bc_product_id,$product_url) {
 		$query_update = $this->db->query("Update ".$this->product_table." set bc_product_id = '".$bc_product_id."', bc_url = '".$product_url."', status = 'yes' WHERE productcode = '".$product_code."'");
+	}
+
+	public function UpdateProductDisStatus($product_code) {
+		$query_update = $this->db->query("Update ".$this->product_table." set  dis_update_status = 'yes' WHERE productcode = '".$product_code."'");
 	}
 
 	public function UpdateProductMessage($product_code, $error) {
